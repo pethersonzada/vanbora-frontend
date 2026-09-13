@@ -2,12 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { API_URL } from '../config/config';
 import { cadastroEnderecoStyles as styles } from '../constants/cadastroEnderecoStyles';
+import { colors } from '../constants/colors';
 
 export default function CadastroEndereco() {
     const router = useRouter();
@@ -74,21 +75,29 @@ export default function CadastroEndereco() {
         if (!currentCoords.current) return Alert.alert('Atenção', 'Aguarde o mapa carregar.');
         try {
             const userId = await AsyncStorage.getItem('userId');
+
+            if (!userId) {
+                Alert.alert('Erro', 'Usuário não identificado. Faça login novamente.');
+                return;
+            }
+
             const payload = { 
-                idUsuario: Number(userId), 
+                apelido: "Casa", 
+                rua: enderecoCompleto,
+                numero: "S/N",
+                bairro: "Centro",
                 latitude: currentCoords.current.latitude, 
-                longitude: currentCoords.current.longitude, 
-                enderecoCompleto 
+                longitude: currentCoords.current.longitude 
             };
             
-            const response = await fetch(`${API_URL}/usuarios/salvar-endereco`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+            const response = await fetch(`${API_URL}/enderecos/usuario/${userId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Bypass-Tunnel-Reminder': 'true' },
                 body: JSON.stringify(payload)
             });
+
             if (response.ok) {
-                await AsyncStorage.setItem('userEndereco', enderecoCompleto);
-                Alert.alert('Sucesso', 'Local definido!');
+                Alert.alert('Sucesso', 'Endereço cadastrado!');
                 router.replace('/(tabs)/home');
             } else {
                 Alert.alert('Erro', `Status: ${response.status}`);
@@ -135,15 +144,15 @@ export default function CadastroEndereco() {
         `;
     }, [initialLocation]);
 
-    if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#2563eb" /></View>;
+    if (loading) return <View style={[styles.center, { backgroundColor: colors.background }]}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
             
             <View style={[styles.headerOverlay, { paddingTop: insets.top + 15 }]}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#1e293b" />
+                    <Ionicons name="arrow-back" size={24} color={colors.textMain} />
                 </TouchableOpacity>
                 <Text style={styles.headerText}>Onde você embarca?</Text>
             </View>

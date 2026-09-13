@@ -1,8 +1,8 @@
 export const colors = {
-    primary: '#2563eb',
-    primaryDark: '#1d4ed8',
+    primary: '#B8860B',
+    primaryDark: '#B8860B',
     background: '#f8fafc',
-    backgroundAlt: '#f1f5f9',
+    backgroundAlt: '#ffffff',
     white: '#ffffff',
     textMain: '#1e293b',
     textMuted: '#64748b',
@@ -11,4 +11,5 @@ export const colors = {
     dangerBg: '#fee2e2',
     success: '#059669',
     successBg: '#dcfce7',
+    dark: '#121212',
 };

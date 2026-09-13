@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { colors } from '../constants/colors';
 import { homeMotoristaStyles as styles } from '../constants/homeMotoristaStyles';
 
 type Props = {
@@ -18,24 +19,24 @@ export function BotoesAcaoMotorista({ viagemAtiva, todosResponderam, onIniciarRo
                 <TouchableOpacity
                     style={[
                         styles.btnMotorista,
-                        { backgroundColor: viagemAtiva ? '#94a3b8' : (todosResponderam ? '#0ea5e9' : '#f59e0b') }
+                        { backgroundColor: viagemAtiva ? colors.textMuted : (todosResponderam ? colors.primary : colors.primaryDark) }
                     ]}
                     onPress={() => onIniciarRota('IDA')}
                     disabled={viagemAtiva}
                 >
-                    <Ionicons name={viagemAtiva ? "lock-closed" : "arrow-up"} size={20} color="#fff" />
+                    <Ionicons name={viagemAtiva ? "lock-closed" : "arrow-up"} size={20} color={colors.white} />
                     <Text style={styles.btnText}>IDA</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[
                         styles.btnMotorista,
-                        { backgroundColor: viagemAtiva ? '#94a3b8' : (todosResponderam ? '#6366f1' : '#f59e0b') }
+                        { backgroundColor: viagemAtiva ? colors.textMuted : (todosResponderam ? colors.primary : colors.primaryDark) }
                     ]}
                     onPress={() => onIniciarRota('VOLTA')}
                     disabled={viagemAtiva}
                 >
-                    <Ionicons name={viagemAtiva ? "lock-closed" : "arrow-down"} size={20} color="#fff" />
+                    <Ionicons name={viagemAtiva ? "lock-closed" : "arrow-down"} size={20} color={colors.white} />
                     <Text style={styles.btnText}>VOLTA</Text>
                 </TouchableOpacity>
             </View>

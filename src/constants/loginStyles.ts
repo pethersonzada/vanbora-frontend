@@ -14,14 +14,10 @@ export const loginStyles = StyleSheet.create({
     logoBox: { 
         width: 90, 
         height: 90, 
-        backgroundColor: '#eff6ff', 
-        borderRadius: 25, 
         justifyContent: 'center', 
         alignItems: 'center', 
         marginBottom: 40, 
         alignSelf: 'center',
-        borderWidth: 1, 
-        borderColor: '#dbeafe'
     },
     title: { 
         fontSize: 32, 

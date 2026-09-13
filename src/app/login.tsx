@@ -67,7 +67,7 @@ export default function Login() {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.logoBox}>
-                    <Image source={require('../../assets/images/logo-app-sem-title.jpeg')} style={{ width: 150, height: 150, borderRadius: 20}}/>
+                    <Image source={require('../../assets/images/logo-app-sem-fundo.png')} style={{ width: 150, height: 150, borderRadius: 20}}/>
                 </View>
 
                 <Text style={styles.title}>Bem-vindo de Volta!</Text>

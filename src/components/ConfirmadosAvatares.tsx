@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { colors } from '../constants/colors';
 
 interface Passageiro {
   nome: string;
@@ -57,13 +58,13 @@ const styles = StyleSheet.create({
     width: 32,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#ffffff',
-    backgroundColor: '#0E1524',
+    borderColor: colors.backgroundAlt,
+    backgroundColor: colors.dark,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -73,14 +74,14 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 12,
-    color: '#475569',
+    color: colors.textMuted,
   },
   boldText: {
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textMain,
   },
   emptyText: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.textMuted,
   },
 });

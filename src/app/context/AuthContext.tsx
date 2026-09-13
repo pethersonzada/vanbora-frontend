@@ -71,3 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
     return useContext(AuthContext);
 }
+
+export default function AuthLayout() {
+    return null;
+}

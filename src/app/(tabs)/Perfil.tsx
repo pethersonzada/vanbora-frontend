@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Modal, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { API_URL } from '../../config/config';
+import { colors } from '../../constants/colors';
 import { perfilStyles as styles } from '../../constants/perfilStyles';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,9 +28,9 @@ export default function Perfil() {
             "Você tem certeza que deseja sair do sistema?",
             [
                 { text: "Cancelar", style: "cancel" },
-                { 
-                    text: "Sair", 
-                    style: "destructive", 
+                {
+                    text: "Sair",
+                    style: "destructive",
                     onPress: async () => {
                         await signOut();
                         router.replace('/login');
@@ -53,7 +54,7 @@ export default function Perfil() {
         } catch (error) {
             console.error(error);
         } finally {
-            await signOut(); 
+            await signOut();
             setModalDeletarVisivel(false);
             router.replace('/login');
         }
@@ -61,10 +62,10 @@ export default function Perfil() {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-            
-            <ScrollView 
-                contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 40 }]} 
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
+            <ScrollView
+                contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 40 }]}
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.header}>
@@ -73,7 +74,7 @@ export default function Perfil() {
                     </View>
                     <Text style={styles.nome}>{user.nome}</Text>
                     <View style={styles.badge}>
-                        <Ionicons name="checkmark-circle" size={14} color="#fff" />
+                        <Ionicons name="checkmark-circle" size={14} color={colors.white} />
                         <Text style={styles.badgeText}> Conta Verificada</Text>
                     </View>
                 </View>
@@ -86,29 +87,29 @@ export default function Perfil() {
                     <View style={styles.linha} />
                     <View style={styles.infoRow}>
                         <Text style={styles.label}>STATUS</Text>
-                        <Text style={[styles.valor, { color: '#2563eb' }]}>Online</Text>
+                        <Text style={[styles.valor, { color: colors.primary }]}>Online</Text>
                     </View>
                 </View>
 
-                <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/cadastro-endereco')}>
-                    <Ionicons name="location" size={24} color="#2563eb" />
-                    <Text style={styles.menuText}>Configurar Endereço</Text>
-                    <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
+                <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/gerenciar-enderecos')}>
+                    <Ionicons name="location" size={24} color={colors.primary} />
+                    <Text style={styles.menuText}>Gerenciar Endereços</Text>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.menuItem} onPress={abrirWhatsApp}>
-                    <Ionicons name="headset" size={24} color="#2563eb" />
+                    <Ionicons name="headset" size={24} color={colors.primary} />
                     <Text style={styles.menuText}>Central de Ajuda</Text>
-                    <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
+                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.botaoSair} onPress={handleLogout}>
-                    <Ionicons name="log-out-outline" size={22} color="#dc2626" />
+                    <Ionicons name="log-out-outline" size={22} color={colors.danger} />
                     <Text style={styles.textoBotaoSair}>Encerrar Sessão</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.botaoDeletar} onPress={() => setModalDeletarVisivel(true)}>
-                    <Ionicons name="trash-outline" size={22} color="#fff" />
+                    <Ionicons name="trash-outline" size={22} color={colors.white} />
                     <Text style={styles.textoBotaoDeletar}>Excluir Minha Conta</Text>
                 </TouchableOpacity>
             </ScrollView>
@@ -122,17 +123,17 @@ export default function Perfil() {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
                         <View style={styles.iconeAlerta}>
-                            <Ionicons name="warning" size={40} color="#dc2626" />
+                            <Ionicons name="warning" size={40} color={colors.danger} />
                         </View>
                         <Text style={styles.modalTitulo}>Deletar conta</Text>
                         <Text style={styles.modalTexto}>
                             Esta ação é irreversível. Todos os seus dados serão apagados. Para confirmar, digite o código ROTA2026 abaixo:
                         </Text>
-                        
+
                         <TextInput
                             style={styles.inputCodigo}
                             placeholder="Digite o código"
-                            placeholderTextColor="#94a3b8"
+                            placeholderTextColor={colors.textMuted}
                             value={codigoDigitado}
                             onChangeText={setCodigoDigitado}
                             autoCapitalize="characters"
@@ -140,8 +141,8 @@ export default function Perfil() {
                         />
 
                         <View style={styles.modalBotoes}>
-                            <TouchableOpacity 
-                                style={[styles.botaoModal, styles.botaoCancelar]} 
+                            <TouchableOpacity
+                                style={[styles.botaoModal, styles.botaoCancelar]}
                                 onPress={() => {
                                     setModalDeletarVisivel(false);
                                     setCodigoDigitado('');
@@ -150,14 +151,14 @@ export default function Perfil() {
                             >
                                 <Text style={styles.textoBotaoCancelar}>Cancelar</Text>
                             </TouchableOpacity>
-                            
-                            <TouchableOpacity 
-                                style={[styles.botaoModal, styles.botaoConfirmarExclusao]} 
+
+                            <TouchableOpacity
+                                style={[styles.botaoModal, styles.botaoConfirmarExclusao]}
                                 onPress={confirmarEExcluirConta}
                                 disabled={carregandoExclusao}
                             >
                                 {carregandoExclusao ? (
-                                    <ActivityIndicator color="#fff" />
+                                    <ActivityIndicator color={colors.white} />
                                 ) : (
                                     <Text style={styles.textoBotaoConfirmarExclusao}>Excluir Conta</Text>
                                 )}

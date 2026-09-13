@@ -6,6 +6,7 @@ import { TextInputMask } from 'react-native-masked-text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { API_URL } from '../config/config';
 import { cadastroStyles as styles } from '../constants/cadastroStyles';
+import { colors } from '../constants/colors';
 
 export default function Signup() {
     const { tipo } = useLocalSearchParams();
@@ -71,26 +72,26 @@ export default function Signup() {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex: 1}}>
                 <ScrollView 
                     contentContainerStyle={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 40 }]} 
                     showsVerticalScrollIndicator={false}
                 >
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={24} color="#1e293b" />
+                        <Ionicons name="arrow-back" size={24} color={colors.textMain} />
                     </TouchableOpacity>
 
                     <Text style={styles.titulo}>Cadastro {tipoUsuario.charAt(0) + tipoUsuario.slice(1).toLowerCase()}</Text>
                     <Text style={styles.subtitulo}>Preencha seus dados para começar</Text>
                     
                     {tipoUsuario === 'MOTORISTA' && (
-                        <View style={[styles.inputContainer, { borderColor: '#d97706', backgroundColor: '#fffbeb' }]}>
-                            <Ionicons name="key-outline" size={20} color="#d97706" style={styles.inputIcon} />
+                        <View style={[styles.inputContainer, { borderColor: colors.primary, backgroundColor: colors.backgroundAlt }]}>
+                            <Ionicons name="key-outline" size={20} color={colors.primary} style={styles.inputIcon} />
                             <TextInput 
                                 style={styles.inputComIcone} 
                                 placeholder="Código de Autorização" 
-                                placeholderTextColor="#92400e"
+                                placeholderTextColor={colors.textMuted}
                                 onChangeText={setCodigoAcesso}
                                 secureTextEntry
                                 underlineColorAndroid="transparent"
@@ -99,11 +100,11 @@ export default function Signup() {
                     )}
 
                     <View style={styles.inputContainer}>
-                        <Ionicons name="person-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+                        <Ionicons name="person-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                         <TextInput 
                             style={styles.inputComIcone} 
                             placeholder="Nome Completo" 
-                            placeholderTextColor="#94a3b8" 
+                            placeholderTextColor={colors.textMuted} 
                             onChangeText={setNome} 
                             autoComplete="name"
                             textContentType="name"
@@ -113,12 +114,12 @@ export default function Signup() {
                     </View>
 
                     <View style={styles.inputContainer}>
-                        <Ionicons name="card-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+                        <Ionicons name="card-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                         <TextInputMask 
                             type={'cpf'} 
                             style={styles.inputComIcone} 
                             placeholder="CPF" 
-                            placeholderTextColor="#94a3b8" 
+                            placeholderTextColor={colors.textMuted} 
                             keyboardType="numeric" 
                             value={cpf} 
                             onChangeText={setCpf} 
@@ -129,12 +130,12 @@ export default function Signup() {
                     </View>
 
                     <View style={styles.inputContainer}>
-                        <Ionicons name="call-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+                        <Ionicons name="call-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                         <TextInputMask 
                             type={'cel-phone'} 
                             options={{ withDDD: true, dddMask: '(99) ' }} 
                             style={styles.inputComIcone} 
-                            placeholderTextColor="#94a3b8" 
+                            placeholderTextColor={colors.textMuted} 
                             placeholder="Telefone" 
                             keyboardType="numeric" 
                             value={telefone} 
@@ -146,11 +147,11 @@ export default function Signup() {
                     </View>
 
                     <View style={styles.inputContainer}>
-                        <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+                        <Ionicons name="lock-closed-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                         <TextInput 
                             style={styles.inputComIcone} 
                             placeholder="Senha" 
-                            placeholderTextColor="#94a3b8" 
+                            placeholderTextColor={colors.textMuted} 
                             secureTextEntry={!showSenha} 
                             onChangeText={setSenha} 
                             autoComplete="new-password"
@@ -161,11 +162,11 @@ export default function Signup() {
                     </View>
 
                     <View style={styles.inputContainer}>
-                        <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+                        <Ionicons name="lock-closed-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                         <TextInput 
                             style={styles.inputComIcone} 
                             placeholder="Confirmar Senha" 
-                            placeholderTextColor="#94a3b8" 
+                            placeholderTextColor={colors.textMuted} 
                             secureTextEntry={!showSenha} 
                             onChangeText={setConfirmaSenha} 
                             autoComplete="new-password"
@@ -174,19 +175,19 @@ export default function Signup() {
                             underlineColorAndroid="transparent"
                         />
                         <TouchableOpacity onPress={() => setShowSenha(!showSenha)} style={styles.eyeIcon}>
-                            <Ionicons name={showSenha ? "eye-off" : "eye"} size={20} color="#94a3b8" />
+                            <Ionicons name={showSenha ? "eye-off" : "eye"} size={20} color={colors.textMuted} />
                         </TouchableOpacity>
                     </View>
 
                     <View style={styles.infoBox}>
-                        <Ionicons name="information-circle-outline" size={20} color="#2563eb" />
+                        <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
                         <Text style={styles.infoText}>
                             O endereço será configurado posteriormente no seu perfil.
                         </Text>
                     </View>
                     
                     <TouchableOpacity style={styles.btnPrimary} onPress={handleCadastro} disabled={loading}>
-                        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>CRIAR CONTA</Text>}
+                        {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.btnText}>CRIAR CONTA</Text>}
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
