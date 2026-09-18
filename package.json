@@ -18,6 +18,7 @@
     "@react-navigation/native": "^7.1.28",
     "@react-navigation/stack": "^7.8.12",
     "@rnmapbox/maps": "^10.3.5",
+    "dotenv": "^17.4.2",
     "expo": "^57.0.0",
     "expo-constants": "~57.0.17",
     "expo-font": "~57.0.3",

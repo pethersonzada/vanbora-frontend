@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { colors } from '../constants/colors';
-import { homeMotoristaStyles as styles } from '../constants/homeMotoristaStyles';
+import { colors } from '../../constants/colors';
+import { homeMotoristaStyles as styles } from '../../constants/homeMotoristaStyles';
 
 type Endereco = {
     id: number;

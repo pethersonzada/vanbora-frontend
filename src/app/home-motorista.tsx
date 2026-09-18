@@ -8,7 +8,7 @@ import { colors } from '../constants/colors';
 import { useAuth } from './context/AuthContext';
 
 // Componentes Modularizados
-import { BannerRotaAtiva } from '../components/BannerRotaAtiva';
+import { BannerRotaAtiva } from '../components/banners/BannerRotaAtiva';
 import { BotoesAcaoMotorista } from '../components/BotoesAcaoMotorista';
 import { CardsTurmasMotorista } from '../components/CardsTurmasMotorista';
 import { HeaderMotorista } from '../components/HeaderMotorista';

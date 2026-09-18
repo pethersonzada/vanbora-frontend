@@ -6,8 +6,8 @@ import { ActivityIndicator, Alert, ScrollView, StatusBar, Text, TouchableOpacity
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { CardTurmaPassageiro } from '../components/CardTurmaPassageiro';
-import ConfirmadosAvatares from '../components/ConfirmadosAvatares';
-import { SeletorPresenca } from '../components/SeletorPresenca';
+import ConfirmadosAvatares from '../components/motorista/ConfirmadosAvatares';
+import { SeletorPresenca } from '../components/passageiro/SeletorPresenca';
 import { API_URL } from '../config/config';
 import { colors } from '../constants/colors';
 import { homePassageiroStyles as styles } from '../constants/homePassageiroStyles';

@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 export default {
   expo: {
     name: "VanBora",
@@ -42,6 +44,7 @@ export default {
       [
         "@rnmapbox/maps",
         {
+          RNMapboxMapsAccessToken: process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN,
           RNMapboxMapsImpl: "mapbox"
         }
       ]
