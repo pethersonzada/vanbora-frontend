@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useState } from 'react';
 import { Alert, Image, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FormLogin } from '../components/FormLogin';
 import { API_URL } from '../config/config';
+import { auth } from '../config/firebase';
 import { loginStyles as styles } from '../constants/loginStyles';
 import { useAuth } from './context/AuthContext';
 
@@ -11,29 +13,31 @@ export default function Login() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { signIn } = useAuth(); 
-    const [cpf, setCpf] = useState('');
+    const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [loading, setLoading] = useState(false);
 
     async function handleLogin() {
-        if (!cpf || !senha) {
-            Alert.alert("Erro", "Preencha o CPF e a senha.");
+        if (!email || !senha) {
+            Alert.alert("Erro", "Preencha o e-mail e a senha.");
             return;
         }
 
         setLoading(true);
         try {
-            const cpfLimpo = cpf.replace(/\D/g, '');
+            const emailFormatado = email.trim().toLowerCase();
 
-            // await AsyncStorage.clear();
+            // 1. Autentica no Firebase Auth
+            const userCredential = await signInWithEmailAndPassword(auth, emailFormatado, senha);
+            const firebaseUid = userCredential.user.uid;
 
-            const response = await fetch(`${API_URL}/usuarios/login`, {
-                method: 'POST',
+            // 2. Busca os dados no PostgreSQL pelo UID
+            const response = await fetch(`${API_URL}/usuarios/por-uid/${firebaseUid}`, {
+                method: 'GET',
                 headers: { 
                     'Content-Type': 'application/json',
                     'Bypass-Tunnel-Reminder': 'true' 
-                },
-                body: JSON.stringify({ cpf: cpfLimpo, senha: senha })
+                }
             });
 
             if (response.ok) {
@@ -47,12 +51,17 @@ export default function Login() {
                 });
                 
                 router.replace('/(tabs)/home');
-                
             } else {
-                Alert.alert("Acesso Negado", "CPF ou senha incorretos.");
+                Alert.alert("Aviso", "Conta autenticada no Firebase, mas o perfil não foi encontrado no banco de dados.");
             }
-        } catch (error) {
-            Alert.alert("Erro", "Falha na conexão com o servidor.");
+        } catch (error: any) {
+            let mensagemErro = "E-mail ou senha incorretos.";
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                mensagemErro = "E-mail ou senha incorretos.";
+            } else if (error.code === 'auth/invalid-email') {
+                mensagemErro = "Formato de e-mail inválido.";
+            }
+            Alert.alert("Acesso Negado", mensagemErro);
         } finally {
             setLoading(false);
         }
@@ -74,8 +83,8 @@ export default function Login() {
                 <Text style={styles.subtitle}>Entre com seus dados para acessar o sistema.</Text>
 
                 <FormLogin 
-                    cpf={cpf} 
-                    setCpf={setCpf} 
+                    email={email} 
+                    setEmail={setEmail} 
                     senha={senha} 
                     setSenha={setSenha} 
                     loading={loading} 

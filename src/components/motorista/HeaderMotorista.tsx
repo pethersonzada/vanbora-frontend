@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../constants/colors';
-import { homeMotoristaStyles as styles } from '../constants/homeMotoristaStyles';
+import { colors } from '../../constants/colors';
+import { homeMotoristaStyles as styles } from '../../constants/homeMotoristaStyles';
 
 type Props = {
     nomeMotorista: string;

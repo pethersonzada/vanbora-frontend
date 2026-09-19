@@ -22,7 +22,7 @@ export default function Perfil() {
         Linking.openURL(url).catch(() => Alert.alert("Erro", "Não foi possível abrir o WhatsApp."));
     };
 
-    const handleLogout = () => {
+   const handleLogout = () => {
         Alert.alert(
             "Encerrar Sessão",
             "Você tem certeza que deseja sair do sistema?",
@@ -31,9 +31,12 @@ export default function Perfil() {
                 {
                     text: "Sair",
                     style: "destructive",
-                    onPress: async () => {
-                        await signOut();
-                        router.replace('/login');
+                    onPress: () => {
+            
+                        setTimeout(async () => {
+                            await signOut();
+                            router.replace('/login');
+                        }, 100);
                     }
                 }
             ]

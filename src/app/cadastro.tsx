@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { TextInputMask } from 'react-native-masked-text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { API_URL } from '../config/config';
+import { auth } from '../config/firebase';
 import { cadastroStyles as styles } from '../constants/cadastroStyles';
 import { colors } from '../constants/colors';
 
@@ -14,18 +16,19 @@ export default function Signup() {
     const insets = useSafeAreaInsets();
     
     const [nome, setNome] = useState('');
-    const [cpf, setCpf] = useState('');
+    const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [confirmaSenha, setConfirmaSenha] = useState('');
     const [telefone, setTelefone] = useState('');
     const [codigoAcesso, setCodigoAcesso] = useState('');
     const [loading, setLoading] = useState(false);
     const [showSenha, setShowSenha] = useState(false);
+    const [showConfirmaSenha, setShowConfirmaSenha] = useState(false);
 
     const tipoUsuario = (tipo as string) || 'PASSAGEIRO';
 
     async function handleCadastro() {
-        if (!nome || !cpf || !senha || !confirmaSenha || !telefone) {
+        if (!nome || !email || !senha || !confirmaSenha || !telefone) {
             Alert.alert("Atenção", "Preencha todos os campos.");
             return;
         }
@@ -42,13 +45,23 @@ export default function Signup() {
 
         setLoading(true);
         try {
+            const emailFormatado = email.trim().toLowerCase();
+
+            // 1. Cria a conta no Firebase Authentication
+            const userCredential = await createUserWithEmailAndPassword(auth, emailFormatado, senha);
+            const firebaseUid = userCredential.user.uid;
+
+            // 2. Dispara o e-mail de verificação oficial do Firebase
+            await sendEmailVerification(userCredential.user);
+
+            // 3. Envia os dados para o backend PostgreSQL incluindo o firebaseUid
             const response = await fetch(`${API_URL}/usuarios/cadastrar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Bypass-Tunnel-Reminder': 'true' },
                 body: JSON.stringify({ 
                     nome, 
-                    cpf: cpf.replace(/\D/g, ''), 
-                    senha, 
+                    email: emailFormatado, 
+                    firebaseUid, 
                     telefone: telefone.replace(/\D/g, ''), 
                     tipo: tipoUsuario, 
                     enderecoCompleto: 'Endereço Pendente', 
@@ -58,13 +71,29 @@ export default function Signup() {
             });
 
             if (response.ok) {
-                Alert.alert("Sucesso", "Conta criada com sucesso!");
+                Alert.alert(
+                    "Conta Criada!", 
+                    "Enviamos um e-mail de confirmação para a sua caixa de entrada. Por favor, verifique o seu e-mail antes de fazer o login."
+                );
                 router.replace('/login');
             } else {
-                Alert.alert("Erro", "Não foi possível realizar o cadastro.");
+                let mensagemErro = "Não foi possível salvar o utilizador no servidor.";
+                try {
+                    const errorData = await response.json();
+                    if (errorData.message) mensagemErro = errorData.message;
+                } catch (e) {}
+                Alert.alert("Atenção", mensagemErro);
             }
-        } catch (error) {
-            Alert.alert("Erro de Conexão", "Verifique o servidor.");
+        } catch (error: any) {
+            let mensagemErro = "Não foi possível conectar ao servidor.";
+            if (error.code === 'auth/email-already-in-use') {
+                mensagemErro = "Este e-mail já está em uso no Firebase.";
+            } else if (error.code === 'auth/invalid-email') {
+                mensagemErro = "E-mail inválido.";
+            } else if (error.code === 'auth/weak-password') {
+                mensagemErro = "A senha deve ter pelo menos 6 caracteres.";
+            }
+            Alert.alert("Erro no Cadastro", mensagemErro);
         } finally {
             setLoading(false);
         }
@@ -114,18 +143,17 @@ export default function Signup() {
                     </View>
 
                     <View style={styles.inputContainer}>
-                        <Ionicons name="card-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
-                        <TextInputMask 
-                            type={'cpf'} 
+                        <Ionicons name="mail-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+                        <TextInput 
                             style={styles.inputComIcone} 
-                            placeholder="CPF" 
+                            placeholder="E-mail" 
                             placeholderTextColor={colors.textMuted} 
-                            keyboardType="numeric" 
-                            value={cpf} 
-                            onChangeText={setCpf} 
-                            autoComplete="username"
-                            textContentType="username"
-                            importantForAutofill="yes"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            value={email} 
+                            onChangeText={setEmail} 
+                            autoComplete="email"
+                            textContentType="emailAddress"
                         />
                     </View>
 
@@ -142,7 +170,6 @@ export default function Signup() {
                             onChangeText={setTelefone} 
                             autoComplete="tel"
                             textContentType="telephoneNumber"
-                            importantForAutofill="no"
                         />
                     </View>
 
@@ -156,9 +183,10 @@ export default function Signup() {
                             onChangeText={setSenha} 
                             autoComplete="new-password"
                             textContentType="newPassword"
-                            importantForAutofill="yes"
-                            underlineColorAndroid="transparent"
                         />
+                        <TouchableOpacity onPress={() => setShowSenha(!showSenha)} style={styles.eyeIcon}>
+                            <Ionicons name={showSenha ? "eye-off" : "eye"} size={20} color={colors.textMuted} />
+                        </TouchableOpacity>
                     </View>
 
                     <View style={styles.inputContainer}>
@@ -167,15 +195,13 @@ export default function Signup() {
                             style={styles.inputComIcone} 
                             placeholder="Confirmar Senha" 
                             placeholderTextColor={colors.textMuted} 
-                            secureTextEntry={!showSenha} 
+                            secureTextEntry={!showConfirmaSenha} 
                             onChangeText={setConfirmaSenha} 
                             autoComplete="new-password"
                             textContentType="newPassword"
-                            importantForAutofill="no"
-                            underlineColorAndroid="transparent"
                         />
-                        <TouchableOpacity onPress={() => setShowSenha(!showSenha)} style={styles.eyeIcon}>
-                            <Ionicons name={showSenha ? "eye-off" : "eye"} size={20} color={colors.textMuted} />
+                        <TouchableOpacity onPress={() => setShowConfirmaSenha(!showConfirmaSenha)} style={styles.eyeIcon}>
+                            <Ionicons name={showConfirmaSenha ? "eye-off" : "eye"} size={20} color={colors.textMuted} />
                         </TouchableOpacity>
                     </View>
 

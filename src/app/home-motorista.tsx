@@ -9,11 +9,11 @@ import { useAuth } from './context/AuthContext';
 
 // Componentes Modularizados
 import { BannerRotaAtiva } from '../components/banners/BannerRotaAtiva';
-import { BotoesAcaoMotorista } from '../components/BotoesAcaoMotorista';
-import { CardsTurmasMotorista } from '../components/CardsTurmasMotorista';
-import { HeaderMotorista } from '../components/HeaderMotorista';
-import { ListaPassageirosAprovados } from '../components/ListaPassageirosAprovados';
-import { PainelTurmaSelecionada } from '../components/PainelTurmaSelecionada';
+import { CardsTurmasMotorista } from '../components/cards/CardsTurmasMotorista';
+import { BotoesAcaoMotorista } from '../components/motorista/BotoesAcaoMotorista';
+import { HeaderMotorista } from '../components/motorista/HeaderMotorista';
+import { ListaPassageirosAprovados } from '../components/motorista/ListaPassageirosAprovados';
+import { PainelTurmaSelecionada } from '../components/motorista/PainelTurmaSelecionada';
 
 export default function HomeMotorista() {
     const { user } = useAuth();

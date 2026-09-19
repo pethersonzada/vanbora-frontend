@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from 'react-native';
-import { API_URL } from '../config/config';
-import { colors } from '../constants/colors';
+import { API_URL } from '../../config/config';
+import { colors } from '../../constants/colors';
 
 type Props = {
     turma: any;

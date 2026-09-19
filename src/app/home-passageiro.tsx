@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
-import { CardTurmaPassageiro } from '../components/CardTurmaPassageiro';
+import { CardTurmaPassageiro } from '../components/cards/CardTurmaPassageiro';
 import ConfirmadosAvatares from '../components/motorista/ConfirmadosAvatares';
 import { SeletorPresenca } from '../components/passageiro/SeletorPresenca';
 import { API_URL } from '../config/config';
