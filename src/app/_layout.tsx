@@ -14,7 +14,8 @@ function RootLayoutNav() {
 
         const inAuthGroup = segments[0] === '(tabs)';
         
-        const publicasForaDasTabs = ['gerenciar-enderecos', 'cadastro-endereco'];
+        // Adicionado 'mapa' na lista de telas livres fora das abas para evitar o loop de redirecionamento
+        const publicasForaDasTabs = ['gerenciar-enderecos', 'cadastro-endereco', 'mapa'];
         const estaEmTelaLivre = segments.length > 0 && publicasForaDasTabs.includes(segments[0]);
 
         if (!user.id && inAuthGroup) {

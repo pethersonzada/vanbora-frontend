@@ -205,7 +205,9 @@ export default function Mapa() {
         if (pontos.length > LIMITE_WAYPOINTS_MAPBOX) {
             throw new Error(`Limite de ${LIMITE_WAYPOINTS_MAPBOX} pontos excedido (${pontos.length} fornecidos)`);
         }
-        if (!MAPBOX_TOKEN) throw new Error('Token do Mapbox ausente');
+        if (!MAPBOX_TOKEN) {
+            throw new Error('Token do Mapbox ausente');
+        }
         
         const waypoints = pontos.map((p) => `${p.longitude},${p.latitude}`).join(';');
         const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${waypoints}?geometries=geojson&overview=full&steps=true&language=pt-BR&access_token=${MAPBOX_TOKEN}`;
@@ -332,7 +334,19 @@ export default function Mapa() {
             const { routeGeoJSON, coordenadas, manobras: manobrasCalculadas } = await buscarRotaMapbox(pontosOrdenados);
             
             if (!montadoRef.current) return;
-            setGeometriaRota(routeGeoJSON);
+            
+            const geoJsonValido = {
+                type: 'FeatureCollection',
+                features: [
+                    {
+                        type: 'Feature',
+                        properties: {},
+                        geometry: routeGeoJSON.geometry
+                    }
+                ]
+            };
+
+            setGeometriaRota(geoJsonValido);
             setCoordenadasRota(coordenadas);
             coordenadasRotaRef.current = coordenadas;
             ultimoIndiceProjecaoRef.current = null;
@@ -340,7 +354,7 @@ export default function Mapa() {
             manobrasRef.current = manobrasCalculadas;
             if (manobrasCalculadas[0]) setManobraAtual(manobrasCalculadas[0]);
             
-            await salvarCache(CACHE_KEYS.geometria(direcaoAtualRef.current), routeGeoJSON);
+            await salvarCache(CACHE_KEYS.geometria(direcaoAtualRef.current), geoJsonValido);
             primeiroTickForaRotaRef.current = null;
             setForaDaRota(false);
             setErroRede(null);
@@ -485,29 +499,48 @@ export default function Mapa() {
             await AsyncStorage.removeItem(CACHE_KEYS.geometria(direcaoUsada));
             
             const resMotorista = await fetchComTimeout(`${API_URL}/usuarios/motorista`, { headers: HEADERS_PADRAO });
+            console.log("STATUS MOTORISTA:", resMotorista.status);
+            
             if (!resMotorista.ok) throw new Error('Erro ao buscar motorista');
             const dadosMotorista = await resMotorista.json();
-            garagemCarregada = { latitude: Number(dadosMotorista.latitude), longitude: Number(dadosMotorista.longitude) };
+            console.log("DADOS MOTORISTA RECEBIDOS:", dadosMotorista);
+            
+            const lat = Number(dadosMotorista.latitude);
+            const lng = Number(dadosMotorista.longitude);
+
+            if (!lat || !lng || (lat === 0 && lng === 0)) {
+                throw new Error('Coordenadas da garagem inválidas no servidor');
+            }
+
+            garagemCarregada = { latitude: lat, longitude: lng };
             
             const resRota = await fetchComTimeout(`${API_URL}/rota/otimizar?sentido=${direcaoUsada}`, { headers: HEADERS_PADRAO });
+            console.log("STATUS ROTA OTIMIZAR:", resRota.status);
+            
             if (!resRota.ok) {
                 const erroJson = await resRota.json();
+                console.log("ERRO JSON ROTA:", erroJson);
                 throw new Error(erroJson.erro || 'Erro ao otimizar rota');
             }
             rotaCarregada = await resRota.json();
+            console.log("ROTA CARREGADA QUANTIDADE:", rotaCarregada?.length);
             
             await salvarCache(CACHE_KEYS.garagem, garagemCarregada);
             await salvarCache(CACHE_KEYS.rota(direcaoUsada), rotaCarregada);
-        } catch {
+        } catch (e) {
+            console.log("ERRO NO CATCH DE CARREGAR GARAGEM:", e);
             garagemCarregada = await lerCache<LatLng>(CACHE_KEYS.garagem);
             rotaCarregada = await lerCache<PassageiroRota[]>(CACHE_KEYS.rota(direcaoUsada));
-            if (montadoRef.current) setErroRede('Sem conexão. Usando dados salvos anteriormente.');
+            if (montadoRef.current) setErroRede('Sem conexão ou endereço inválido. Usando dados salvos.');
         }
         
         if (!montadoRef.current) return;
         
-        if (!garagemCarregada || !rotaCarregada || rotaCarregada.length === 0) {
-            Alert.alert('Aviso', 'Nenhum passageiro confirmado para esta rota ou erro de conexão.');
+        if (!garagemCarregada || (garagemCarregada.latitude === 0 && garagemCarregada.longitude === 0) || !rotaCarregada || rotaCarregada.length === 0) {
+            Alert.alert(
+                'Endereço não cadastrado', 
+                'Precisas de cadastrar o endereço da tua garagem/embarque primeiro na tela de endereços para traçar a rota corretamente.'
+            );
             setLoading(false);
             return;
         }
@@ -531,10 +564,23 @@ export default function Mapa() {
         try {
             const { routeGeoJSON, coordenadas, manobras: manobrasCalculadas } = await buscarRotaMapbox(pontosOrdenados);
             if (!montadoRef.current) return;
-            setGeometriaRota(routeGeoJSON);
+            
+            const geoJsonValido = {
+                type: 'FeatureCollection',
+                features: [
+                    {
+                        type: 'Feature',
+                        properties: {},
+                        geometry: routeGeoJSON.geometry
+                    }
+                ]
+            };
+
+            setGeometriaRota(geoJsonValido);
             setCoordenadasRota(coordenadas);
             coordenadasRotaRef.current = coordenadas;
-            await salvarCache(CACHE_KEYS.geometria(direcaoUsada), routeGeoJSON);
+            await salvarCache(CACHE_KEYS.geometria(direcaoUsada), geoJsonValido);
+            
             setManobras(manobrasCalculadas);
             manobrasRef.current = manobrasCalculadas;
             if (manobrasCalculadas[0]) setManobraAtual(manobrasCalculadas[0]);
@@ -549,8 +595,9 @@ export default function Mapa() {
             if (!montadoRef.current) return;
             if (geometriaCache) {
                 setGeometriaRota(geometriaCache);
-                setCoordenadasRota(geometriaCache.geometry.coordinates);
-                coordenadasRotaRef.current = geometriaCache.geometry.coordinates;
+                const coords = geometriaCache.geometry?.coordinates || geometriaCache.features?.[0]?.geometry?.coordinates || [];
+                setCoordenadasRota(coords);
+                coordenadasRotaRef.current = coords;
                 setManobraAtual({ instrucao: 'Navegação em modo offline (rota salva)', tipo: 'straight', coordenada: [0, 0], indiceRota: 0 });
             } else {
                 setErroRede('Não foi possível calcular a rota. Verifique o token do Mapbox e a conexão.');
@@ -613,9 +660,15 @@ export default function Mapa() {
     if (localizacao && coordenadasRota.length > 1 && ultimoIndiceProjecaoRef.current !== null) {
         const idx = ultimoIndiceProjecaoRef.current;
         if (idx > 0) {
-            geometriaPercorrida = { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coordenadasRota.slice(0, idx + 1) } };
+            geometriaPercorrida = {
+                type: 'FeatureCollection',
+                features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coordenadasRota.slice(0, idx + 1) } }]
+            };
         }
-        geometriaRestante = { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coordenadasRota.slice(idx) } };
+        geometriaRestante = {
+            type: 'FeatureCollection',
+            features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coordenadasRota.slice(idx) } }]
+        };
     }
 
     if (loading || !garagem) {

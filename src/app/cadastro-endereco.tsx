@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import MapboxGL from '@rnmapbox/maps';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -16,14 +17,17 @@ import {
     View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
 import { API_URL } from '../config/config';
 import { cadastroEnderecoStyles as styles } from '../constants/cadastroEnderecoStyles';
 import { colors } from '../constants/colors';
 
+const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
+MapboxGL.setAccessToken(MAPBOX_TOKEN);
+
 export default function CadastroEndereco() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const cameraRef = useRef<MapboxGL.Camera>(null);
     
     const [loading, setLoading] = useState(true);
     const [initialLocation, setInitialLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -71,17 +75,24 @@ export default function CadastroEndereco() {
         })();
     }, []);
 
-    const handleMapMessage = async (event: any) => {
-        try {
-            const { lat, lng } = JSON.parse(event.nativeEvent.data);
-            currentCoords.current = { latitude: lat, longitude: lng };
+    const handleCameraChanged = async (feature: any) => {
+        const coordinates = feature?.geometry?.coordinates;
+        if (coordinates && coordinates.length === 2) {
+            const lng = coordinates[0];
+            const lat = coordinates[1];
             
-            const [resultado] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
-            if (resultado) {
-                setEnderecoCompleto(`${resultado.street || 'Rua não identificada'}, ${resultado.streetNumber || 'S/N'}`);
+            currentCoords.current = { latitude: lat, longitude: lng };
+
+            try {
+                const [resultado] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+                if (resultado) {
+                    setEnderecoCompleto(`${resultado.street || 'Rua não identificada'}, ${resultado.streetNumber || 'S/N'}`);
+                } else {
+                    setEnderecoCompleto('Endereço selecionado no mapa');
+                }
+            } catch {
+                setEnderecoCompleto('Endereço selecionado no mapa');
             }
-        } catch (error) {
-            setEnderecoCompleto('Endereço selecionado no mapa');
         }
     };
 
@@ -97,7 +108,6 @@ export default function CadastroEndereco() {
             return;
         }
 
-        // Validação estrita para o TypeScript saber que as coordenadas nunca serão null aqui
         if (!currentCoords.current) {
             Alert.alert('Erro', 'As coordenadas do mapa não foram identificadas.');
             return;
@@ -143,44 +153,7 @@ export default function CadastroEndereco() {
         }
     };
 
-    const mapHtml = useMemo(() => {
-        if (!initialLocation) return '';
-        return `
-            <!DOCTYPE html><html><head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-            <style>
-                body, html { height: 100%; margin: 0; padding: 0; overflow: hidden; }
-                #map { height: 100vh; width: 100vw; position: absolute; top: 0; left: 0; }
-                .pino-container {
-                    position: absolute; top: 50%; left: 50%;
-                    width: 25px; height: 41px;
-                    margin-top: -41px; margin-left: -12.5px;
-                    z-index: 9999; pointer-events: none;
-                }
-            </style></head>
-            <body>
-                <div class="pino-container"><img src="https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png"></div>
-                <div id="map"></div>
-                <script>
-                    var map = L.map('map', {zoomControl: false, inertia: false, tap: true}).setView([${initialLocation.latitude}, ${initialLocation.longitude}], 16);
-                    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                    
-                    var timeout = null;
-                    map.on('move', function() {
-                        clearTimeout(timeout);
-                        timeout = setTimeout(function() {
-                            var center = map.getCenter();
-                            window.ReactNativeWebView.postMessage(JSON.stringify({ lat: center.lat, lng: center.lng }));
-                        }, 200);
-                    });
-                </script>
-            </body></html>
-        `;
-    }, [initialLocation]);
-
-    if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>;
+    if (loading || !initialLocation) return <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
     return (
         <View style={styles.container}>
@@ -194,13 +167,25 @@ export default function CadastroEndereco() {
             </View>
 
             <View style={styles.mapContainer}>
-                <WebView 
-                    source={{ html: mapHtml }} 
-                    onMessage={handleMapMessage} 
-                    javaScriptEnabled={true} 
-                    scrollEnabled={false}
-                    bounces={false}
-                />
+                <MapboxGL.MapView 
+                    style={{ flex: 1 }} 
+                    styleURL={MapboxGL.StyleURL.Dark} 
+                    logoEnabled={false} 
+                    attributionEnabled={false} 
+                    compassEnabled={false}
+                    onRegionDidChange={handleCameraChanged}
+                >
+                    <MapboxGL.Camera
+                        ref={cameraRef}
+                        zoomLevel={16}
+                        centerCoordinate={[initialLocation.longitude, initialLocation.latitude]}
+                    />
+                </MapboxGL.MapView>
+
+                {/* Pino fixo centralizado no ecrã */}
+                <View style={{ position: 'absolute', top: '50%', left: '50%', marginLeft: -12, marginTop: -41, pointerEvents: 'none', zIndex: 10 }}>
+                    <Ionicons name="location" size={36} color={colors.primary} />
+                </View>
             </View>
 
             <View style={[styles.footer, { paddingBottom: insets.bottom + 25 }]}>
