@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
+import MapboxGL from '@rnmapbox/maps';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
 import { CardTurmaPassageiro } from '../components/cards/CardTurmaPassageiro';
 import ConfirmadosAvatares from '../components/motorista/ConfirmadosAvatares';
 import { SeletorPresenca } from '../components/passageiro/SeletorPresenca';
@@ -13,32 +13,32 @@ import { colors } from '../constants/colors';
 import { homePassageiroStyles as styles } from '../constants/homePassageiroStyles';
 import { useAuth } from './context/AuthContext';
 
+const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
+MapboxGL.setAccessToken(MAPBOX_TOKEN);
+
 export default function HomePassageiro() {
     const { user } = useAuth();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const vanMapRef = useRef<WebView>(null);
+    const cameraRef = useRef<MapboxGL.Camera>(null);
     
     const [loading, setLoading] = useState(true);
-    
     const [temEndereco, setTemEndereco] = useState(true);
     const [statusConfirmado, setStatusConfirmado] = useState('');
     const [minhaLocalizacao, setMinhaLocalizacao] = useState<{ latitude: number; longitude: number } | null>(null);
+    const [posicaoVan, setPosicaoVan] = useState<{ latitude: number; longitude: number } | null>(null);
     const [statusViagem, setStatusViagem] = useState('INATIVA');
     const [statusGps, setStatusGps] = useState('GARAGEM');
     const [turma, setTurma] = useState(null);
     const [enderecos, setEnderecos] = useState<{ id: number; apelido: string; rua: string; numero: string; bairro: string; }[]>([]);
-    
     const [passageirosConfirmados, setPassageirosConfirmados] = useState<{ nome: string; iniciais: string }[]>([]);
 
-    // Carrega os dados apenas uma vez quando o componente monta
     useEffect(() => {
         if (user?.id) {
             carregarDados();
         }
     }, [user?.id]);
 
-    // Radar simplificado rodando a cada 15 segundos sem disparar loops no banco
     useEffect(() => {
         let intervalo: ReturnType<typeof setInterval> | null = null;
 
@@ -54,14 +54,23 @@ export default function HomePassageiro() {
                     if (resLoc.ok) {
                         setStatusGps('ONLINE');
                         const pos = await resLoc.json();
-                        if (pos?.latitude && pos?.longitude && vanMapRef.current) {
-                            vanMapRef.current.injectJavaScript(`if(typeof updateDriverLocation==='function')updateDriverLocation(${pos.latitude},${pos.longitude});true;`);
+                        if (pos?.latitude && pos?.longitude) {
+                            const novaPos = { latitude: Number(pos.latitude), longitude: Number(pos.longitude) };
+                            setPosicaoVan(novaPos);
+                            if (cameraRef.current) {
+                                cameraRef.current.setCamera({
+                                    centerCoordinate: [novaPos.longitude, novaPos.latitude],
+                                    zoomLevel: 16,
+                                    animationDuration: 1000,
+                                });
+                            }
                         }
                     } else if (resLoc.status === 404) { 
                         setStatusGps('AGUARDANDO'); 
                     }
                 } else { 
                     setStatusGps('GARAGEM'); 
+                    setPosicaoVan(null);
                 }
             } catch (e) { 
                 setStatusGps('ERRO'); 
@@ -93,7 +102,6 @@ export default function HomePassageiro() {
 
                 if (resStatus.ok) {
                     const list = await resStatus.json();
-                    
                     const meuRegistro = list.find((p: any) => String(p.id || p.usuarioId || p.passageiroId) === String(user.id));
                     setStatusConfirmado(meuRegistro?.status || meuRegistro?.presenca || '');
 
@@ -141,8 +149,6 @@ export default function HomePassageiro() {
     async function registrarPresenca(status: string, enderecoId?: number) {
         if (!user?.id) return;
         const statusEnvio = status === 'LIMPAR' ? 'LIMPAR' : status;
-        
-        // Atualiza a tela na hora sem precisar recarregar tudo do zero via backend
         setStatusConfirmado(status === 'LIMPAR' ? '' : statusEnvio);
         
         try {
@@ -160,30 +166,38 @@ export default function HomePassageiro() {
         }
     }
 
-    const mapHtml = useMemo(() => {
-        if (!minhaLocalizacao) return '';
-        return `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><style>body,html{height:100%;margin:0;padding:0}#map{height:100vh;width:100vw;position:absolute}.van-icon{font-size:24px;text-align:center}</style></head><body><div id="map"></div><script>var map=L.map('map',{zoomControl:false,dragging:true}).setView([${minhaLocalizacao.latitude},${minhaLocalizacao.longitude}],15);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);var vMarker=null;function updateDriverLocation(lat,lng){if(!vMarker){vMarker=L.marker([lat,lng],{icon:L.divIcon({html:'🚐',className:'van-icon',iconSize:[30,30]})}).addTo(map);}else{vMarker.setLatLng([lat,lng]);map.panTo([lat,lng]);}}</script></body></html>`;
-    }, [minhaLocalizacao]);
+    const minhaPosicaoNaFila = useMemo(() => {
+        if (!user?.nome) return null;
+        const index = passageirosConfirmados.findIndex(p => p.nome.toLowerCase() === user.nome.toLowerCase());
+        return index !== -1 ? index + 1 : null;
+    }, [passageirosConfirmados, user?.nome]);
 
     if (loading) return <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1, backgroundColor: colors.background }} />;
+
+    const centroMapa = posicaoVan || minhaLocalizacao;
 
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
             
             <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
-                <Text style={styles.dateText}>{new Date().toLocaleDateString('pt-BR', { month: 'long', day: 'numeric' })}</Text>
-                <Text style={styles.welcome}>Olá, {user?.nome ? user.nome.split(' ')[0] : ''}</Text>
+                <View>
+                    <Text style={styles.dateText}>{new Date().toLocaleDateString('pt-BR', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()}</Text>
+                    <Text style={styles.welcome}>Olá, {user?.nome ? user.nome.split(' ')[0] : ''}</Text>
+                </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {!temEndereco && (
                     <TouchableOpacity style={styles.bannerAlerta} onPress={() => router.push('/cadastro-endereco')}>
-                        <Ionicons name="location" size={24} color={colors.danger} />
-                        <View style={{flex: 1, marginLeft: 10}}>
-                            <Text style={styles.alertaTitulo}>Local faltando</Text>
-                            <Text style={styles.alertaTexto}>Defina seu endereço no Perfil.</Text>
+                        <View style={{ backgroundColor: 'rgba(244, 67, 54, 0.15)', padding: 10, borderRadius: 12 }}>
+                            <Ionicons name="location" size={22} color={colors.danger} />
                         </View>
+                        <View style={{flex: 1, marginLeft: 12}}>
+                            <Text style={styles.alertaTitulo}>Endereço Pendente</Text>
+                            <Text style={styles.alertaTexto}>Toque aqui para definir o seu local de embarque.</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                     </TouchableOpacity>
                 )}
 
@@ -191,26 +205,105 @@ export default function HomePassageiro() {
 
                 {turma ? (
                     <>
-                        <View style={styles.topoPassageiro}>
+                        <View style={[styles.topoPassageiro, { alignItems: 'center', marginBottom: 12 }]}>
                             <Text style={styles.sectionTitle}>Radar da Van</Text>
-                            <View style={styles.badge}><Text style={styles.badgeTexto}>{statusGps}</Text></View>
+                            <View style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                backgroundColor: statusGps === 'ONLINE' ? 'rgba(76, 175, 80, 0.12)' : 'rgba(255, 193, 7, 0.12)',
+                                paddingHorizontal: 10,
+                                paddingVertical: 5,
+                                borderRadius: 10,
+                                borderWidth: 1,
+                                borderColor: statusGps === 'ONLINE' ? 'rgba(76, 175, 80, 0.3)' : 'rgba(255, 193, 7, 0.3)'
+                            }}>
+                                <View style={{ 
+                                    width: 7, 
+                                    height: 7, 
+                                    borderRadius: 3.5, 
+                                    backgroundColor: statusGps === 'ONLINE' ? '#4CAF50' : '#FFC107', 
+                                    marginRight: 6 
+                                }} />
+                                <Text style={{ 
+                                    fontSize: 11, 
+                                    fontWeight: '700', 
+                                    color: statusGps === 'ONLINE' ? '#4CAF50' : '#FFC107',
+                                    letterSpacing: 0.5
+                                }}>
+                                    {statusGps}
+                                </Text>
+                            </View>
                         </View>
 
-                        <View style={styles.radarCard}>
+                        <View style={[styles.radarCard, { borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 }]}>
                             {statusViagem === 'INATIVA' ? (
                                 <View style={styles.cadeadoBox}>
-                                    <Ionicons name="bus-outline" size={40} color={colors.textMuted} />
+                                    <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 30, marginBottom: 12 }}>
+                                        <Ionicons name="bus-outline" size={36} color={colors.textMuted} />
+                                    </View>
                                     <Text style={styles.cadeadoTitulo}>A van está na garagem</Text>
+                                    <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 4 }}>O radar será ativado quando a viagem começar.</Text>
                                 </View>
-                            ) : minhaLocalizacao ? (
-                                <WebView ref={vanMapRef} source={{ html: mapHtml }} javaScriptEnabled={true} scrollEnabled={false} overScrollMode="never" bounces={false} />
+                            ) : centroMapa ? (
+                                <MapboxGL.MapView 
+                                    style={{ flex: 1 }} 
+                                    styleURL={MapboxGL.StyleURL.Dark} 
+                                    logoEnabled={false} 
+                                    attributionEnabled={false} 
+                                    compassEnabled={false}
+                                >
+                                    <MapboxGL.Camera
+                                        ref={cameraRef}
+                                        zoomLevel={16}
+                                        centerCoordinate={[centroMapa.longitude, centroMapa.latitude]}
+                                    />
+                                    {posicaoVan && (
+                                        <MapboxGL.PointAnnotation id="van-passageiro" coordinate={[posicaoVan.longitude, posicaoVan.latitude]}>
+                                            <View style={{ backgroundColor: '#1E1E1E', width: 40, height: 40, borderRadius: 20, borderWidth: 3, borderColor: colors.primary, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 8 }}>
+                                                <Text style={{ fontSize: 18 }}>🚐</Text>
+                                            </View>
+                                        </MapboxGL.PointAnnotation>
+                                    )}
+                                </MapboxGL.MapView>
                             ) : (
                                 <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1 }} />
                             )}
                         </View>
 
-                        <View style={{ marginBottom: 15, backgroundColor: colors.backgroundAlt, padding: 15, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
-                            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textMain, marginBottom: 10 }}>Colegas na Rota Hoje</Text>
+                        <View style={{ backgroundColor: colors.backgroundAlt, padding: 18, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 16 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={{ backgroundColor: 'rgba(255, 193, 7, 0.12)', padding: 8, borderRadius: 10, marginRight: 10 }}>
+                                        <Ionicons name="analytics" size={18} color={colors.primary} />
+                                    </View>
+                                    <Text style={{ fontSize: 15, fontWeight: '700', color: colors.textMain, letterSpacing: 0.3 }}>Status da Viagem</Text>
+                                </View>
+                                <View style={{ backgroundColor: statusViagem === 'ATIVA' ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 255, 255, 0.08)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
+                                    <Text style={{ fontSize: 11, fontWeight: '700', color: statusViagem === 'ATIVA' ? '#4CAF50' : colors.textMuted }}>
+                                        {statusViagem === 'ATIVA' ? 'EM CURSO' : 'AGUARDANDO'}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <View style={{ backgroundColor: 'rgba(255,255,255,0.03)', padding: 14, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', marginBottom: 12 }}>
+                                <Text style={{ fontSize: 11, color: colors.textMuted, fontWeight: '500', marginBottom: 4 }}>Sua Posição na Fila</Text>
+                                <Text style={{ fontSize: 17, fontWeight: 'bold', color: colors.primary }}>
+                                    {minhaPosicaoNaFila ? `${minhaPosicaoNaFila}º na ordem de embarque` : 'Não confirmado na rota de hoje'}
+                                </Text>
+                            </View>
+
+                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 193, 7, 0.06)', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255, 193, 7, 0.15)' }}>
+                                <Ionicons name={statusViagem === 'ATIVA' ? "navigate-circle" : "time"} size={20} color={colors.primary} style={{ marginRight: 10 }} />
+                                <Text style={{ fontSize: 13, color: colors.textMain, flex: 1, lineHeight: 18, fontWeight: '500' }}>
+                                    {statusViagem === 'ATIVA' 
+                                        ? 'A van está na estrada recolhendo os passageiros. Fique pronto no local!' 
+                                        : 'Confirme sua presença abaixo para entrar na escala da rota de hoje.'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View style={{ marginBottom: 16, backgroundColor: colors.backgroundAlt, padding: 18, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
+                            <Text style={{ fontSize: 15, fontWeight: '700', color: colors.textMain, marginBottom: 12 }}>Colegas Confirmados</Text>
                             <ConfirmadosAvatares passageiros={passageirosConfirmados} />
                         </View>
 
@@ -220,29 +313,36 @@ export default function HomePassageiro() {
                     <View style={{ 
                         marginTop: 20, 
                         backgroundColor: colors.backgroundAlt, 
-                        padding: 25, 
-                        borderRadius: 16, 
+                        padding: 28, 
+                        borderRadius: 22, 
                         borderWidth: 1, 
-                        borderColor: colors.border,
+                        borderColor: 'rgba(255,255,255,0.06)',
                         alignItems: 'center' 
                     }}>
-                        <Ionicons name="time-outline" size={50} color={colors.primary} style={{ marginBottom: 15 }} />
+                        <View style={{ backgroundColor: 'rgba(255, 193, 7, 0.12)', padding: 18, borderRadius: 30, marginBottom: 16 }}>
+                            <Ionicons name="ticket-outline" size={32} color={colors.primary} />
+                        </View>
                         <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.textMain, textAlign: 'center', marginBottom: 8 }}>
                             Aguardando Vinculação
                         </Text>
-                        <Text style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 20 }}>
-                            Você ainda não faz parte de nenhuma turma ou sua solicitação enviada está aguardando aprovação do motorista.
+                        <Text style={{ fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 22, marginBottom: 24 }}>
+                            Você ainda não faz parte de nenhuma turma ou o motorista ainda não aprovou o seu acesso.
                         </Text>
                         <TouchableOpacity 
                             style={{ 
                                 backgroundColor: colors.primary, 
                                 paddingVertical: 14, 
                                 paddingHorizontal: 20, 
-                                borderRadius: 12, 
+                                borderRadius: 14, 
                                 width: '100%', 
                                 alignItems: 'center',
                                 flexDirection: 'row',
-                                justifyContent: 'center'
+                                justifyContent: 'center',
+                                shadowColor: colors.primary,
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 8,
+                                elevation: 6
                             }} 
                             onPress={() => router.push('/entrar-turma')}
                         >
