@@ -4,209 +4,244 @@ import { colors } from './colors';
 export const perfilStyles = StyleSheet.create({
     container: { 
         flex: 1, 
-        backgroundColor: colors.backgroundAlt 
+        backgroundColor: colors.backgroundAlt || '#F4F5F7'
     },
     scrollContent: { 
-        padding: 20, 
-        paddingBottom: 40 
+        paddingBottom: 60 
     },
-    header: { 
-        alignItems: 'center', 
-        marginBottom: 40,
+    headerBanner: {
+        backgroundColor: colors.primary,
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
+        height: 140,
+    },
+    profileHeader: {
+        alignItems: 'center',
+        marginTop: -50,
+        marginBottom: 30,
+        paddingHorizontal: 20,
+    },
+    avatarContainer: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
         backgroundColor: colors.white,
-        padding: 30,
-        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 4,
+        borderColor: colors.backgroundAlt || '#F4F5F7',
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 4,
+        marginBottom: 12,
+    },
+    avatarText: {
+        fontSize: 36,
+        color: colors.primary,
+        fontWeight: 'bold',
+    },
+    nome: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: colors.textMain,
+        marginBottom: 6,
+    },
+    badge: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        alignItems: 'center',
+    },
+    badgeText: {
+        color: colors.textMain,
+        fontSize: 12,
+        fontWeight: '600',
+        marginLeft: 6,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    section: {
+        paddingHorizontal: 20,
+        marginBottom: 24,
+    },
+    sectionTitle: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: colors.textMuted,
+        marginBottom: 10,
+        marginLeft: 4,
+        letterSpacing: 1,
+    },
+    card: {
+        backgroundColor: colors.white,
+        borderRadius: 16,
+        overflow: 'hidden',
         borderWidth: 1,
-        borderColor: colors.border
+        borderColor: colors.border || '#E2E8F0',
     },
-    avatar: { 
-        width: 100, 
-        height: 100, 
-        borderRadius: 50, 
-        backgroundColor: colors.primary, 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        marginBottom: 15 
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 16,
+        paddingHorizontal: 16,
+        backgroundColor: colors.white,
     },
-    avatarText: { 
-        fontSize: 40, 
-        color: colors.white, 
-        fontWeight: 'bold' 
+    menuIconWrapper: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: colors.backgroundAlt || '#F8FAFC',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
     },
-    nome: { 
-        fontSize: 24, 
-        fontWeight: '800', 
-        color: colors.textMain 
+    menuText: {
+        flex: 1,
+        fontSize: 16,
+        fontWeight: '500',
+        color: colors.textMain,
     },
-    badge: { 
-        flexDirection: 'row', 
-        backgroundColor: colors.primary, 
-        paddingHorizontal: 12, 
-        paddingVertical: 6, 
-        borderRadius: 20, 
-        marginTop: 10, 
-        alignItems: 'center' 
+    divider: {
+        height: 1,
+        backgroundColor: colors.border || '#E2E8F0',
+        marginLeft: 64,
     },
-    badgeText: { 
-        color: colors.white, 
-        fontSize: 12, 
-        fontWeight: '600', 
-        marginLeft: 4 
+    actionContainer: {
+        paddingHorizontal: 20,
+        marginTop: 10,
+        gap: 16,
     },
-    card: { 
-        backgroundColor: colors.white, 
-        padding: 25, 
-        borderRadius: 20, 
-        marginBottom: 20, 
-        borderWidth: 1, 
-        borderColor: colors.border 
+    botaoSair: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.white,
+        paddingVertical: 16,
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: '#FEE2E2', 
+        gap: 8,
     },
-    infoRow: { 
-        marginBottom: 10 
+    textoBotaoSair: {
+        color: colors.danger,
+        fontSize: 16,
+        fontWeight: '700',
     },
-    label: { 
-        fontSize: 11, 
-        color: colors.textMuted, 
-        fontWeight: '800', 
-        letterSpacing: 0.8 
+    botaoDeletar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.danger,
+        paddingVertical: 16,
+        borderRadius: 16,
+        gap: 8,
     },
-    valor: { 
-        fontSize: 18, 
-        color: colors.textMain, 
-        fontWeight: '600', 
-        marginTop: 4 
+    textoBotaoDeletar: {
+        color: colors.white,
+        fontSize: 16,
+        fontWeight: '700',
     },
-    linha: { 
-        height: 1, 
-        backgroundColor: colors.backgroundAlt, 
-        marginVertical: 15 
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(15, 23, 42, 0.6)',
+        justifyContent: 'center',
+        padding: 24,
     },
-    menuItem: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        backgroundColor: colors.white, 
-        padding: 20, 
-        borderRadius: 15, 
-        marginBottom: 15, 
-        borderWidth: 1, 
-        borderColor: colors.border 
+    modalContent: {
+        backgroundColor: colors.white,
+        borderRadius: 24,
+        padding: 24,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+        elevation: 10,
     },
-    menuText: { 
-        flex: 1, 
-        marginLeft: 15, 
-        fontSize: 16, 
-        fontWeight: '600', 
-        color: '#334155' 
+    modalIcon: {
+        marginBottom: 16,
     },
-    botaoSair: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        backgroundColor: colors.dangerBg, 
-        padding: 18, 
-        borderRadius: 15, 
-        marginTop: 20, 
-        borderWidth: 1, 
-        borderColor: '#fecaca', 
-        gap: 8 
+    modalTitulo: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: colors.textMain,
+        marginBottom: 10,
     },
-    textoBotaoSair: { 
-        color: colors.danger, 
-        fontSize: 16, 
-        fontWeight: 'bold' 
+    modalTexto: {
+        fontSize: 14,
+        color: colors.textMuted,
+        textAlign: 'center',
+        marginBottom: 20,
+        lineHeight: 22,
     },
-    botaoDeletar: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        backgroundColor: colors.danger, 
-        padding: 18, 
-        borderRadius: 15, 
-        marginTop: 15, 
-        borderWidth: 1, 
-        borderColor: '#991b1b', 
-        gap: 8 
+    inputCodigo: {
+        width: '100%',
+        backgroundColor: colors.backgroundAlt || '#F8FAFC',
+        borderWidth: 1,
+        borderColor: colors.border || '#E2E8F0',
+        borderRadius: 12,
+        padding: 16,
+        fontSize: 16,
+        textAlign: 'center',
+        fontWeight: 'bold',
+        color: colors.textMain,
+        marginBottom: 16,
+        letterSpacing: 3,
     },
-    textoBotaoDeletar: { 
-        color: colors.white, 
-        fontSize: 16, 
-        fontWeight: 'bold' 
+    // NOVAS PROPRIEDADES ADICIONADAS PARA OS MODAIS DE E-MAIL E SENHA
+    inputForm: {
+        width: '100%',
+        backgroundColor: colors.backgroundAlt || '#F8FAFC',
+        borderWidth: 1,
+        borderColor: colors.border || '#E2E8F0',
+        borderRadius: 12,
+        padding: 16,
+        fontSize: 16,
+        color: colors.textMain,
+        marginBottom: 16,
     },
-    modalOverlay: { 
-        flex: 1, 
-        backgroundColor: 'rgba(0, 0, 0, 0.6)', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        padding: 20 
+    errorText: {
+        color: colors.danger,
+        fontSize: 13,
+        marginBottom: 16,
+        textAlign: 'center',
     },
-    modalContent: { 
-        backgroundColor: colors.white, 
-        width: '100%', 
-        borderRadius: 20, 
-        padding: 25, 
-        alignItems: 'center' 
+    modalBotoes: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
     },
-    iconeAlerta: { 
-        width: 80, 
-        height: 80, 
-        borderRadius: 40, 
-        backgroundColor: colors.dangerBg, 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        marginBottom: 20 
+    botaoModal: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    modalTitulo: { 
-        fontSize: 22, 
-        fontWeight: '900', 
-        color: colors.textMain, 
-        marginBottom: 10 
+    botaoCancelar: {
+        backgroundColor: colors.backgroundAlt || '#F8FAFC',
     },
-    modalTexto: { 
-        fontSize: 14, 
-        color: colors.textMuted, 
-        textAlign: 'center', 
-        marginBottom: 20, 
-        lineHeight: 22 
+    textoBotaoCancelar: {
+        color: colors.textMain,
+        fontSize: 15,
+        fontWeight: '600',
     },
-    inputCodigo: { 
-        width: '100%', 
-        backgroundColor: colors.backgroundAlt, 
-        borderWidth: 1, 
-        borderColor: '#cbd5e1', 
-        borderRadius: 12, 
-        padding: 15, 
-        fontSize: 16, 
-        textAlign: 'center', 
-        fontWeight: 'bold', 
-        color: colors.textMain, 
-        marginBottom: 25 
+    botaoConfirmarPadrao: {
+        backgroundColor: colors.primary,
     },
-    modalBotoes: { 
-        flexDirection: 'row', 
-        gap: 15, 
-        width: '100%' 
+    textoBotaoConfirmarPadrao: {
+        color: colors.white,
+        fontSize: 15,
+        fontWeight: '600',
     },
-    botaoModal: { 
-        flex: 1, 
-        paddingVertical: 16, 
-        borderRadius: 12, 
-        alignItems: 'center', 
-        justifyContent: 'center' 
+    botaoConfirmarExclusao: {
+        backgroundColor: colors.danger,
     },
-    botaoCancelar: { 
-        backgroundColor: colors.backgroundAlt 
-    },
-    textoBotaoCancelar: { 
-        color: colors.textMuted, 
-        fontSize: 16, 
-        fontWeight: 'bold' 
-    },
-    botaoConfirmarExclusao: { 
-        backgroundColor: colors.danger 
-    },
-    textoBotaoConfirmarExclusao: { 
-        color: colors.white, 
-        fontSize: 16, 
-        fontWeight: 'bold' 
+    textoBotaoConfirmarExclusao: {
+        color: colors.white,
+        fontSize: 15,
+        fontWeight: '600',
     }
 });

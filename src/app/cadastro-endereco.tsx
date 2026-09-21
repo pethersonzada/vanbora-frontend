@@ -3,7 +3,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StatusBar, Text, TouchableOpacity, View } from 'react-native';
+import {
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    StatusBar,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { API_URL } from '../config/config';
@@ -13,12 +24,15 @@ import { colors } from '../constants/colors';
 export default function CadastroEndereco() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const [loading, setLoading] = useState(true);
     
+    const [loading, setLoading] = useState(true);
     const [initialLocation, setInitialLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [enderecoCompleto, setEnderecoCompleto] = useState('Buscando seu endereço...');
-    
     const currentCoords = useRef<{ latitude: number; longitude: number } | null>(null);
+
+    const [modalVisivel, setModalVisivel] = useState(false);
+    const [nomeLocal, setNomeLocal] = useState('');
+    const [salvando, setSalvando] = useState(false);
 
     useEffect(() => {
         (async () => {
@@ -71,21 +85,39 @@ export default function CadastroEndereco() {
         }
     };
 
-    const salvarEndereco = async () => {
+    const abrirModalConfirmacao = () => {
         if (!currentCoords.current) return Alert.alert('Atenção', 'Aguarde o mapa carregar.');
+        setNomeLocal(''); 
+        setModalVisivel(true);
+    };
+
+    const salvarEndereco = async () => {
+        if (!nomeLocal.trim()) {
+            Alert.alert('Atenção', 'Você precisa dar um nome para este endereço.');
+            return;
+        }
+
+        // Validação estrita para o TypeScript saber que as coordenadas nunca serão null aqui
+        if (!currentCoords.current) {
+            Alert.alert('Erro', 'As coordenadas do mapa não foram identificadas.');
+            return;
+        }
+
+        setSalvando(true);
         try {
             const userId = await AsyncStorage.getItem('userId');
 
             if (!userId) {
                 Alert.alert('Erro', 'Usuário não identificado. Faça login novamente.');
+                setSalvando(false);
                 return;
             }
 
             const payload = { 
-                apelido: "Casa", 
+                apelido: nomeLocal.trim(), 
                 rua: enderecoCompleto,
-                numero: "S/N",
-                bairro: "Centro",
+                numero: "S/N", 
+                bairro: "Centro", 
                 latitude: currentCoords.current.latitude, 
                 longitude: currentCoords.current.longitude 
             };
@@ -97,13 +129,17 @@ export default function CadastroEndereco() {
             });
 
             if (response.ok) {
+                await AsyncStorage.setItem('userEndereco', enderecoCompleto);
+                setModalVisivel(false);
                 Alert.alert('Sucesso', 'Endereço cadastrado!');
                 router.replace('/(tabs)/home');
             } else {
-                Alert.alert('Erro', `Status: ${response.status}`);
+                Alert.alert('Erro', `Falha no servidor. Status: ${response.status}`);
             }
         } catch (e) {
             Alert.alert('Erro', 'Falha estrutural na conexão.');
+        } finally {
+            setSalvando(false);
         }
     };
 
@@ -144,11 +180,11 @@ export default function CadastroEndereco() {
         `;
     }, [initialLocation]);
 
-    if (loading) return <View style={[styles.center, { backgroundColor: colors.background }]}><ActivityIndicator size="large" color={colors.primary} /></View>;
+    if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>;
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
             
             <View style={[styles.headerOverlay, { paddingTop: insets.top + 15 }]}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -170,10 +206,59 @@ export default function CadastroEndereco() {
             <View style={[styles.footer, { paddingBottom: insets.bottom + 25 }]}>
                 <Text style={styles.enderecoLabel}>Endereço selecionado:</Text>
                 <Text style={styles.enderecoText}>{enderecoCompleto}</Text>
-                <TouchableOpacity style={styles.button} onPress={salvarEndereco}>
+                <TouchableOpacity style={styles.button} onPress={abrirModalConfirmacao}>
                     <Text style={styles.buttonText}>Confirmar Localização</Text>
                 </TouchableOpacity>
             </View>
+
+            <Modal animationType="fade" transparent visible={modalVisivel} onRequestClose={() => { if (!salvando) setModalVisivel(false); }}>
+                <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Ionicons name="bookmark" size={28} color={colors.primary} />
+                            <Text style={styles.modalTitulo}>Salvar Endereço</Text>
+                        </View>
+                        
+                        <Text style={styles.modalTexto}>
+                            Como você deseja chamar este local? (ex: Casa, Faculdade, Trabalho)
+                        </Text>
+
+                        <TextInput
+                            style={styles.inputNome}
+                            placeholder="Nome do local"
+                            placeholderTextColor={colors.textMuted}
+                            value={nomeLocal}
+                            onChangeText={setNomeLocal}
+                            autoCapitalize="words"
+                            autoCorrect={false}
+                            editable={!salvando}
+                            maxLength={30}
+                        />
+
+                        <View style={styles.modalBotoes}>
+                            <TouchableOpacity 
+                                style={[styles.botaoModal, styles.botaoCancelar]} 
+                                onPress={() => setModalVisivel(false)} 
+                                disabled={salvando}
+                            >
+                                <Text style={styles.textoBotaoCancelar}>Cancelar</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity 
+                                style={[styles.botaoModal, styles.botaoConfirmar]} 
+                                onPress={salvarEndereco}
+                                disabled={salvando || !nomeLocal.trim()}
+                            >
+                                {salvando ? (
+                                    <ActivityIndicator color={colors.white} />
+                                ) : (
+                                    <Text style={styles.textoBotaoConfirmar}>Salvar</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
         </View>
     );
 }

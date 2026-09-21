@@ -9,17 +9,19 @@ type Props = {
     setSenha: (v: string) => void;
     loading: boolean;
     onLogin: () => void;
+    onEsqueciSenha: () => void;
+    carregandoSenha: boolean;
 };
 
-export function FormLogin({ email, setEmail, senha, setSenha, loading, onLogin }: Props) {
+export function FormLogin({ email, setEmail, senha, setSenha, loading, onLogin, onEsqueciSenha, carregandoSenha }: Props) {
     return (
         <View>
             <View style={styles.inputGroup}>
-                <Text style={styles.label}>E-mail</Text>
+                <Text style={styles.label}>Email</Text>
                 <TextInput 
                     style={styles.input} 
                     placeholder="seu@email.com"
-                    placeholderTextColor={colors.textMuted}
+                    placeholderTextColor="#94A3B8"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoComplete="email"
@@ -30,19 +32,29 @@ export function FormLogin({ email, setEmail, senha, setSenha, loading, onLogin }
             </View>
 
             <View style={styles.inputGroup}>
-                <Text style={styles.label}>Senha</Text>
+                <Text style={styles.label}>Password</Text>
                 <TextInput 
                     style={styles.input} 
-                    placeholder="••••••"
-                    placeholderTextColor={colors.textMuted}
+                    placeholder="••••••••"
+                    placeholderTextColor="#94A3B8"
                     secureTextEntry
                     value={senha}
                     onChangeText={setSenha}
                 />
             </View>
 
-            <TouchableOpacity style={styles.button} onPress={onLogin} disabled={loading}>
-                {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>Entrar</Text>}
+            <TouchableOpacity 
+                style={styles.forgotPasswordContainer} 
+                onPress={onEsqueciSenha}
+                disabled={carregandoSenha}
+            >
+                <Text style={styles.forgotPasswordText}>
+                    {carregandoSenha ? "Enviando..." : "Esqueceu a senha?"}
+                </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.button} onPress={onLogin} disabled={loading || carregandoSenha}>
+                {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>Login</Text>}
             </TouchableOpacity>
         </View>
     );
