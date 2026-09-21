@@ -4,102 +4,99 @@ import { colors } from './colors';
 export const loginStyles = StyleSheet.create({
     container: { 
         flex: 1, 
-        backgroundColor: colors.primary, // Cor de fundo do topo baseada na primária do app
+        backgroundColor: colors.background || '#F8FAFC', 
     },
-    topHeader: {
-        height: 240,
+    content: { 
+        paddingHorizontal: 28, 
+        flexGrow: 1, 
+        justifyContent: 'center' 
+    },
+    logoContainer: {
         alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 20,
+        marginBottom: 24,
     },
-    headerLogo: {
-        width: 90,
-        height: 90,
-        borderRadius: 20,
-        marginBottom: 10,
-    },
-    contentCard: { 
-        backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 36,
-        borderTopRightRadius: 36,
-        paddingHorizontal: 28,
-        paddingTop: 36,
-        paddingBottom: 40,
-        flexGrow: 1,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-        elevation: 10,
+    logoImage: {
+        width: 100,
+        height: 100,
+        resizeMode: 'contain',
     },
     title: { 
-        alignSelf: 'center',
-        fontSize: 32, 
+        fontSize: 28, 
         fontWeight: '800', 
         color: colors.textMain, 
-        marginBottom: 4, 
+        marginBottom: 6, 
+        textAlign: 'center',
+        letterSpacing: -0.5,
     },
     subtitle: { 
-        alignSelf: 'center',
         fontSize: 15, 
         color: colors.textMuted, 
-        marginBottom: 30, 
+        marginBottom: 32, 
+        textAlign: 'center',
+        lineHeight: 22,
     },
     inputGroup: { 
-        marginBottom: 16 
+        marginBottom: 18 
     },
     label: { 
         fontSize: 12, 
         fontWeight: '700', 
         color: colors.textMuted, 
         textTransform: 'uppercase', 
-        marginBottom: 6, 
+        marginBottom: 8, 
         letterSpacing: 0.5 
     },
     input: { 
-        backgroundColor: '#F8FAFC', 
-        padding: 16, 
-        borderRadius: 16, 
+        backgroundColor: colors.white, 
+        paddingVertical: 16,
+        paddingHorizontal: 16,
+        borderRadius: 14, 
         fontSize: 15, 
         borderWidth: 1, 
         borderColor: '#E2E8F0', 
         color: colors.textMain 
     },
+    // ADICIONE ESTA LINHA ABAIXO PARA CORRIGIR O ERRO:
+    inputFocused: {
+        borderColor: colors.primary,
+    },
     forgotPasswordContainer: {
         alignItems: 'flex-end',
-        marginTop: 4,
+        marginTop: 6,
         marginBottom: 24,
     },
     forgotPasswordText: {
-        color: colors.textMuted,
+        color: colors.primary,
         fontSize: 13,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     button: { 
         backgroundColor: colors.primary, 
-        padding: 18, 
-        borderRadius: 16, 
+        paddingVertical: 18, 
+        borderRadius: 14, 
         alignItems: 'center', 
         shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 4,
     },
     buttonText: { 
         color: colors.white, 
         fontSize: 16, 
-        fontWeight: 'bold',
-        letterSpacing: 0.5
+        fontWeight: '700',
+        letterSpacing: 0.3
     },
     registerContainer: { 
-        marginTop: 32, 
+        marginTop: 36, 
         alignItems: 'center' 
     },
     row: { 
         flexDirection: 'row', 
         marginTop: 6, 
-        alignItems: 'center' 
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
     },
     text: { 
         color: colors.textMuted, 

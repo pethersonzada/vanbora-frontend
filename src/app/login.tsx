@@ -96,20 +96,19 @@ export default function Login() {
             style={styles.container} 
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+            <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
             
-            {/* Topo Colorido Decorativo */}
-            <View style={[styles.topHeader, { paddingTop: insets.top + 20 }]}>
-                <Image source={require('../../assets/images/logo-app-sem-fundo-sem-titulo.png')} style={styles.headerLogo}/>
-            </View>
-
-            {/* Cartão Branco Sobreposto */}
             <ScrollView 
-                contentContainerStyle={styles.contentCard} 
+                contentContainerStyle={[styles.content, { paddingTop: insets.top + 30, paddingBottom: insets.bottom + 30 }]} 
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
-                <Text style={styles.title}>Seja Bem-vindo!</Text>
+                {/* Logo Centralizada e Limpa */}
+                <View style={styles.logoContainer}>
+                    <Image source={require('../../assets/images/logo-app-sem-fundo-sem-titulo.png')} style={styles.logoImage}/>
+                </View>
+
+                <Text style={styles.title}>Bem-vindo de volta!</Text>
                 <Text style={styles.subtitle}>Entre com seus dados para continuar.</Text>
 
                 <FormLogin 
