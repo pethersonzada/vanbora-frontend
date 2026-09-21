@@ -202,7 +202,7 @@ export default function Perfil() {
                     <View style={s.card}>
                         <Pressable style={s.menuItem} onPress={() => router.push('/gerenciar-enderecos')}>
                             <View style={s.menuIconWrapper}>
-                                <Ionicons name="location-outline" size={20} color={colors.primary} />
+                                <Ionicons name="location-outline" size={20} />
                             </View>
                             <Text style={s.menuText}>Gerenciar Endereços</Text>
                             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />

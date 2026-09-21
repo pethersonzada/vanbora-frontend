@@ -6,7 +6,7 @@ export default {
     slug: "van-app",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/logo-app-teste.png",
+    icon: "./assets/images/logo-app.png",
     scheme: "vanapp",
     userInterfaceStyle: "automatic",
     splash: {
@@ -21,7 +21,7 @@ export default {
       package: "com.vanbora.app",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
-        foregroundImage: "./assets/images/logo-app-teste.png",
+        foregroundImage: "./assets/images/logo-app.png",
         backgroundImage: "./assets/images/android-icon-background.png",
         monochromeImage: "./assets/images/android-icon-monochrome.png"
       },
@@ -31,7 +31,7 @@ export default {
     web: {
       bundler: "metro",
       output: "static",
-      favicon: "./assets/images/logo-app-teste.png"
+      favicon: "./assets/images/logo-app.png"
     },
     plugins: [
       "expo-router",
