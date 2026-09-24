@@ -16,8 +16,8 @@ export const loginStyles = StyleSheet.create({
         marginBottom: 24,
     },
     logoImage: {
-        width: 100,
-        height: 100,
+        width: 130,
+        height: 130,
         resizeMode: 'contain',
     },
     title: { 
@@ -56,7 +56,7 @@ export const loginStyles = StyleSheet.create({
         borderColor: '#E2E8F0', 
         color: colors.textMain 
     },
-    // ADICIONE ESTA LINHA ABAIXO PARA CORRIGIR O ERRO:
+
     inputFocused: {
         borderColor: colors.primary,
     },

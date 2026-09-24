@@ -621,12 +621,26 @@ export default function Mapa() {
 
     async function handleEncerrarViagem() {
         if (!online) return Alert.alert('Conexão Necessária', 'Conecte-se à internet para sincronizar o encerramento.');
-        try {
-            const res = await fetchComTimeout(`${API_URL}/rota/encerrar`, { method: 'POST', headers: HEADERS_PADRAO });
-            if (res.ok) router.replace('/(tabs)/home');
-        } catch {
-            if (montadoRef.current) setErroRede('Não foi possível encerrar a viagem. Tente novamente.');
-        }
+        
+        Alert.alert(
+            'Encerrar Viagem',
+            'Tens a certeza de que desejas encerrar a rota atual?',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                { 
+                    text: 'Sim, Encerrar', 
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const res = await fetchComTimeout(`${API_URL}/rota/encerrar`, { method: 'POST', headers: HEADERS_PADRAO });
+                            if (res.ok) router.replace('/(tabs)/home');
+                        } catch {
+                            if (montadoRef.current) setErroRede('Não foi possível encerrar a viagem. Tente novamente.');
+                        }
+                    }
+                }
+            ]
+        );
     }
 
     const centralizarNaVan = useCallback(() => {

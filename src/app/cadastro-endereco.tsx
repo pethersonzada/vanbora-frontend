@@ -28,7 +28,7 @@ export default function CadastroEndereco() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const cameraRef = useRef<MapboxGL.Camera>(null);
-    
+
     const [loading, setLoading] = useState(true);
     const [initialLocation, setInitialLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [enderecoCompleto, setEnderecoCompleto] = useState('Buscando seu endereço...');
@@ -37,6 +37,8 @@ export default function CadastroEndereco() {
     const [modalVisivel, setModalVisivel] = useState(false);
     const [nomeLocal, setNomeLocal] = useState('');
     const [salvando, setSalvando] = useState(false);
+
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         (async () => {
@@ -53,7 +55,7 @@ export default function CadastroEndereco() {
 
                 let loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
                 const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-                
+
                 setInitialLocation(coords);
                 currentCoords.current = coords;
 
@@ -63,7 +65,6 @@ export default function CadastroEndereco() {
                 } else {
                     setEnderecoCompleto('Arraste o mapa para ajustar');
                 }
-
             } catch (error) {
                 Alert.alert('Erro de GPS', 'Não foi possível encontrar sua localização exata.');
                 const fallback = { latitude: -8.2336, longitude: -35.7958 };
@@ -73,32 +74,45 @@ export default function CadastroEndereco() {
                 setLoading(false);
             }
         })();
+
+        return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
     }, []);
 
-    const handleCameraChanged = async (feature: any) => {
+    const buscarEnderecoPorCoordenadas = async (lat: number, lng: number) => {
+        currentCoords.current = { latitude: lat, longitude: lng };
+        try {
+            const [resultado] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+            if (resultado) {
+                const rua = resultado.street || resultado.name || 'Rua não identificada';
+                const numero = resultado.streetNumber || 'S/N';
+                setEnderecoCompleto(`${rua}, ${numero}`);
+            } else {
+                setEnderecoCompleto('Endereço selecionado no mapa');
+            }
+        } catch {
+            setEnderecoCompleto('Endereço selecionado no mapa');
+        }
+    };
+
+    const handleRegionDidChange = (feature: any) => {
         const coordinates = feature?.geometry?.coordinates;
         if (coordinates && coordinates.length === 2) {
             const lng = coordinates[0];
             const lat = coordinates[1];
-            
-            currentCoords.current = { latitude: lat, longitude: lng };
 
-            try {
-                const [resultado] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
-                if (resultado) {
-                    setEnderecoCompleto(`${resultado.street || 'Rua não identificada'}, ${resultado.streetNumber || 'S/N'}`);
-                } else {
-                    setEnderecoCompleto('Endereço selecionado no mapa');
-                }
-            } catch {
-                setEnderecoCompleto('Endereço selecionado no mapa');
-            }
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+            timeoutRef.current = setTimeout(() => {
+                buscarEnderecoPorCoordenadas(lat, lng);
+            }, 400);
         }
     };
 
     const abrirModalConfirmacao = () => {
         if (!currentCoords.current) return Alert.alert('Atenção', 'Aguarde o mapa carregar.');
-        setNomeLocal(''); 
+        setNomeLocal('');
         setModalVisivel(true);
     };
 
@@ -123,15 +137,15 @@ export default function CadastroEndereco() {
                 return;
             }
 
-            const payload = { 
-                apelido: nomeLocal.trim(), 
+            const payload = {
+                apelido: nomeLocal.trim(),
                 rua: enderecoCompleto,
-                numero: "S/N", 
-                bairro: "Centro", 
-                latitude: currentCoords.current.latitude, 
-                longitude: currentCoords.current.longitude 
+                numero: 'S/N',
+                bairro: 'Centro',
+                latitude: currentCoords.current.latitude,
+                longitude: currentCoords.current.longitude
             };
-            
+
             const response = await fetch(`${API_URL}/enderecos/usuario/${userId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Bypass-Tunnel-Reminder': 'true' },
@@ -144,10 +158,11 @@ export default function CadastroEndereco() {
                 Alert.alert('Sucesso', 'Endereço cadastrado!');
                 router.replace('/(tabs)/home');
             } else {
-                Alert.alert('Erro', `Falha no servidor. Status: ${response.status}`);
+                const errorText = await response.text();
+                Alert.alert('Erro', `Falha ao salvar no servidor (Status: ${response.status}). ${errorText}`);
             }
         } catch (e) {
-            Alert.alert('Erro', 'Falha estrutural na conexão.');
+            Alert.alert('Erro', 'Falha de conexão com o servidor.');
         } finally {
             setSalvando(false);
         }
@@ -158,7 +173,7 @@ export default function CadastroEndereco() {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-            
+
             <View style={[styles.headerOverlay, { paddingTop: insets.top + 15 }]}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color={colors.textMain} />
@@ -167,13 +182,13 @@ export default function CadastroEndereco() {
             </View>
 
             <View style={styles.mapContainer}>
-                <MapboxGL.MapView 
-                    style={{ flex: 1 }} 
-                    styleURL={MapboxGL.StyleURL.Dark} 
-                    logoEnabled={false} 
-                    attributionEnabled={false} 
+                <MapboxGL.MapView
+                    style={{ flex: 1 }}
+                    styleURL={MapboxGL.StyleURL.Dark}
+                    logoEnabled={false}
+                    attributionEnabled={false}
                     compassEnabled={false}
-                    onRegionDidChange={handleCameraChanged}
+                    onRegionIsChanging={handleRegionDidChange}
                 >
                     <MapboxGL.Camera
                         ref={cameraRef}
@@ -182,7 +197,6 @@ export default function CadastroEndereco() {
                     />
                 </MapboxGL.MapView>
 
-                {/* Pino fixo centralizado no ecrã */}
                 <View style={{ position: 'absolute', top: '50%', left: '50%', marginLeft: -12, marginTop: -41, pointerEvents: 'none', zIndex: 10 }}>
                     <Ionicons name="location" size={36} color={colors.primary} />
                 </View>
@@ -203,7 +217,7 @@ export default function CadastroEndereco() {
                             <Ionicons name="bookmark" size={28} color={colors.primary} />
                             <Text style={styles.modalTitulo}>Salvar Endereço</Text>
                         </View>
-                        
+
                         <Text style={styles.modalTexto}>
                             Como você deseja chamar este local? (ex: Casa, Faculdade, Trabalho)
                         </Text>
@@ -221,16 +235,16 @@ export default function CadastroEndereco() {
                         />
 
                         <View style={styles.modalBotoes}>
-                            <TouchableOpacity 
-                                style={[styles.botaoModal, styles.botaoCancelar]} 
-                                onPress={() => setModalVisivel(false)} 
+                            <TouchableOpacity
+                                style={[styles.botaoModal, styles.botaoCancelar]}
+                                onPress={() => setModalVisivel(false)}
                                 disabled={salvando}
                             >
                                 <Text style={styles.textoBotaoCancelar}>Cancelar</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity 
-                                style={[styles.botaoModal, styles.botaoConfirmar]} 
+                            <TouchableOpacity
+                                style={[styles.botaoModal, styles.botaoConfirmar]}
                                 onPress={salvarEndereco}
                                 disabled={salvando || !nomeLocal.trim()}
                             >

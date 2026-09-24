@@ -103,7 +103,6 @@ export default function Login() {
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
-                {/* Logo Centralizada e Limpa */}
                 <View style={styles.logoContainer}>
                     <Image source={require('../../assets/images/logo-app-sem-fundo-sem-titulo.png')} style={styles.logoImage}/>
                 </View>
