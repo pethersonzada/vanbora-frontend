@@ -14,5 +14,5 @@ export default function Index() {
         );
     }
 
-    return user.id ? <Redirect href="/(tabs)/home" /> : <Redirect href="/perfil" />;
+    return user?.id ? <Redirect href="/(tabs)/home" /> : <Redirect href="/perfil" />;
 }
