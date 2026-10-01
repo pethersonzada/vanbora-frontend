@@ -31,25 +31,25 @@ export default function Perfil() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
-    // Estados - Exclusão
     const [modalDeletarVisivel, setModalDeletarVisivel] = useState(false);
     const [textoDigitado, setTextoDigitado] = useState('');
     const [excluindo, setExcluindo] = useState(false);
     const [erroExclusao, setErroExclusao] = useState('');
 
-    // Estados - Alterar E-mail
     const [modalEmailVisivel, setModalEmailVisivel] = useState(false);
     const [senhaAtual, setSenhaAtual] = useState('');
     const [novoEmail, setNovoEmail] = useState('');
     const [carregandoEmail, setCarregandoEmail] = useState(false);
 
-    // Estados - Redefinir Senha
     const [modalSenhaVisivel, setModalSenhaVisivel] = useState(false);
     const [carregandoSenha, setCarregandoSenha] = useState(false);
 
     const nome = user?.nome?.trim() || 'Usuário';
     const inicial = nome.charAt(0).toUpperCase();
     const confirmacaoOk = textoDigitado.trim().toUpperCase() === PALAVRA_CONFIRMACAO;
+
+    // Identifica se é passageiro (ajuste conforme a string que vem no teu objeto user.tipo, ex: 'PASSAGEIRO' ou 'ALUNO')
+    const ehPassageiro = user?.tipo?.toUpperCase() === 'PASSAGEIRO' || user?.tipo?.toUpperCase() === 'ALUNO';
 
     const abrirWhatsApp = () => {
         Linking.openURL(WHATSAPP_URL).catch(() =>
@@ -138,7 +138,6 @@ export default function Perfil() {
                 throw new Error("Nenhum usuário logado no momento.");
             }
 
-            // Dispara o link automaticamente para o e-mail da conta ativa
             await sendPasswordResetEmail(auth, userFirebase.email);
             
             Alert.alert(
@@ -197,18 +196,21 @@ export default function Perfil() {
                     ) : null}
                 </View>
 
-                <View style={s.section}>
-                    <Text style={s.sectionTitle}>CONFIGURAÇÕES</Text>
-                    <View style={s.card}>
-                        <Pressable style={s.menuItem} onPress={() => router.push('/gerenciar-enderecos')}>
-                            <View style={s.menuIconWrapper}>
-                                <Ionicons name="location-outline" size={20} />
-                            </View>
-                            <Text style={s.menuText}>Gerenciar Endereços</Text>
-                            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                        </Pressable>
+                {/* Exibe Gerenciar Endereços APENAS se for passageiro */}
+                {ehPassageiro && (
+                    <View style={s.section}>
+                        <Text style={s.sectionTitle}>ENDEREÇOS</Text>
+                        <View style={s.card}>
+                            <Pressable style={s.menuItem} onPress={() => router.push('/gerenciar-enderecos' as any)}>
+                                <View style={s.menuIconWrapper}>
+                                    <Ionicons name="location-outline" size={20} color={colors.textMain} />
+                                </View>
+                                <Text style={s.menuText}>Gerenciar Endereços</Text>
+                                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                            </Pressable>
+                        </View>
                     </View>
-                </View>
+                )}
 
                 <View style={s.section}>
                     <Text style={s.sectionTitle}>SEGURANÇA</Text>
@@ -301,7 +303,7 @@ export default function Perfil() {
                 </KeyboardAvoidingView>
             </Modal>
 
-            {/* MODAL: REDEFINIR SENHA (Sem input livre, vai direto para o e-mail da conta logada) */}
+            {/* MODAL: REDEFINIR SENHA */}
             <Modal animationType="fade" transparent visible={modalSenhaVisivel} onRequestClose={fecharModais}>
                 <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                     <View style={s.modalContent}>

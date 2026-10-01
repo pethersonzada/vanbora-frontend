@@ -7,7 +7,6 @@ import { API_URL } from '../config/config';
 import { colors } from '../constants/colors';
 import { useAuth } from './context/AuthContext';
 
-// Componentes Modularizados
 import { BannerRotaAtiva } from '../components/banners/BannerRotaAtiva';
 import { CardsTurmasMotorista } from '../components/cards/CardsTurmasMotorista';
 import { BotoesAcaoMotorista } from '../components/motorista/BotoesAcaoMotorista';
@@ -276,7 +275,20 @@ export default function HomeMotorista() {
                     turmas={turmas}
                     turmaSelecionada={turmaSelecionada}
                     onSelecionarTurma={async (t) => { setTurmaSelecionada(t); await buscarDadosDaTurma(t.id); }}
-                    onEditarTurma={() => { }}
+                    onEditarTurma={() => {
+                        if (turmaSelecionada) {
+                            router.push({
+                                pathname: '/editar-turma',
+                                params: {
+                                    id: turmaSelecionada.id,
+                                    nomeAtual: turmaSelecionada.nome,
+                                    turnoAtual: turmaSelecionada.turno,
+                                    origemAtual: turmaSelecionada.origemNome,
+                                    destinoAtual: turmaSelecionada.destinoNome
+                                }
+                            } as any);
+                        }
+                    }}
                 />
 
                 <PainelTurmaSelecionada

@@ -61,7 +61,7 @@ export const homeMotoristaStyles = StyleSheet.create({
         flexDirection: 'row', 
         alignItems: 'center', 
         gap: 4, 
-        backgroundColor: '#eff6ff', 
+        backgroundColor: colors.primary, 
         paddingHorizontal: 10, 
         paddingVertical: 5, 
         borderRadius: 8, 
@@ -71,7 +71,7 @@ export const homeMotoristaStyles = StyleSheet.create({
     btnEditarTurmaText: { 
         fontSize: 12, 
         fontWeight: 'bold', 
-        color: colors.primary 
+        color: colors.white 
     },
     turmasScroll: { 
         marginBottom: 20 

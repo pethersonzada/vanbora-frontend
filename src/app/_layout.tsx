@@ -14,8 +14,15 @@ function RootLayoutNav() {
 
         const inAuthGroup = segments[0] === '(tabs)';
         
-        
-        const publicasForaDasTabs = ['gerenciar-enderecos', 'entrar-turma', 'cadastro-endereco', 'mapa'];
+        const publicasForaDasTabs = [
+            'gerenciar-enderecos', 
+            'entrar-turma', 
+            'cadastro-endereco', 
+            'cadastro-turma',
+            'editar-turma',
+            'mapa',
+            'selecionar-rota-mapa'
+        ];
         const estaEmTelaLivre = segments.length > 0 && publicasForaDasTabs.includes(segments[0]);
 
         if (!user.id && inAuthGroup) {

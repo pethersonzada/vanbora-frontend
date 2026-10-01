@@ -11,6 +11,13 @@ type Props = {
 };
 
 export function ListaPassageirosAprovados({ passageiros, turmaSelecionada, onAdicionarAluno, onRemoverAluno }: Props) {
+    const formatarNomeResumido = (nomeCompleto: string) => {
+        if (!nomeCompleto) return 'Passageiro';
+        const partes = nomeCompleto.trim().split(' ');
+        if (partes.length === 1) return partes[0];
+        return `${partes[0]} ${partes[1]}`;
+    };
+
     return (
         <>
             <View style={styles.infoRow}>
@@ -24,7 +31,7 @@ export function ListaPassageirosAprovados({ passageiros, turmaSelecionada, onAdi
                     passageiros.map(p => (
                         <View key={p.id} style={[styles.listItem, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.nameText}>{p.nome}</Text>
+                                <Text style={styles.nameText}>{formatarNomeResumido(p.nome)}</Text>
                                 <Text style={styles.subText}>{p.status ? 'Respondeu' : 'Aguardando...'}</Text>
                             </View>
                             

@@ -732,10 +732,6 @@ export default function Mapa() {
                     ref={cameraRef}
                     zoomLevel={18}
                     pitch={65}
-                    followUserLocation
-                    followUserMode={MapboxGL.UserTrackingModes.FollowWithCourse}
-                    followZoomLevel={18}
-                    followPitch={65}
                 />
                 
                 {geometriaPercorrida && (

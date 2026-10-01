@@ -56,6 +56,11 @@ export default function HomePassageiro() {
                 const estadoAtual = data?.status || 'INATIVA';
                 setStatusViagem(estadoAtual);
 
+                // CORREÇÃO: Sempre que o radar rodar, atualiza os dados da turma e passageiros em segundo plano
+                if (user?.id) {
+                    carregarDadosSilencioso();
+                }
+
                 if (estadoAtual === 'ATIVA') {
                     const resLoc = await fetch(`${API_URL}/rota/localizacao-van`, { headers: { 'Bypass-Tunnel-Reminder': 'true' } });
                     if (resLoc.ok) {
@@ -91,9 +96,15 @@ export default function HomePassageiro() {
         return () => {
             if (intervalo) clearInterval(intervalo);
         };
-    }, []);
+    }, [user?.id]);
 
     async function carregarDados() {
+        setLoading(true);
+        await carregarDadosSilencioso();
+        setLoading(false);
+    }
+
+    async function carregarDadosSilencioso() {
         try {
             if (user?.id) {
                 const [resStatus, resTurma, resEnderecos] = await Promise.all([
@@ -148,9 +159,7 @@ export default function HomePassageiro() {
                 }
             }
         } catch (e) {
-            setTurma(null);
-        } finally {
-            setLoading(false);
+            console.log("Erro ao atualizar dados em segundo plano", e);
         }
     }
 
@@ -165,10 +174,14 @@ export default function HomePassageiro() {
                 url += `&enderecoId=${enderecoId}`;
             }
 
-            await fetch(url, {
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Bypass-Tunnel-Reminder': 'true' }
             });
+
+            if (res.ok) {
+                carregarDadosSilencioso();
+            }
         } catch (e) {
             Alert.alert("Erro", "Falha de conexão ao registrar presença.");
         }

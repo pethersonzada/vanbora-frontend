@@ -6,7 +6,9 @@ import { homeMotoristaStyles as styles } from '../../constants/homeMotoristaStyl
 
 type Turma = {
     id: number;
-    nome: string;
+    nome?: string;
+    origemNome?: string;
+    destinoNome?: string;
     turno: string;
 };
 
@@ -28,7 +30,7 @@ export function CardsTurmasMotorista({ turmas, turmaSelecionada, onSelecionarTur
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     {turmaSelecionada && (
                         <TouchableOpacity onPress={onEditarTurma} style={styles.btnEditarTurma}>
-                            <Ionicons name="pencil" size={14} color={colors.primary} />
+                            <Ionicons name="pencil" size={14} color={colors.white} />
                             <Text style={styles.btnEditarTurmaText}>Editar</Text>
                         </TouchableOpacity>
                     )}
@@ -68,6 +70,15 @@ export function CardsTurmasMotorista({ turmas, turmaSelecionada, onSelecionarTur
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.turmasScroll}>
                     {turmas.map(t => {
                         const selecionada = turmaSelecionada?.id === t.id;
+                        
+                        // Define o texto que vai aparecer no card:
+                        // 1. Se tiver 'nome', usa ele.
+                        // 2. Se não tiver, monta com 'origemNome' e 'destinoNome'.
+                        // 3. Se faltar tudo, bota um fallback genérico.
+                        const tituloExibicao = t.nome?.trim() 
+                            ? t.nome 
+                            : (t.origemNome && t.destinoNome ? `${t.origemNome} ➔ ${t.destinoNome}` : (t.destinoNome || 'Rota sem nome'));
+
                         return (
                             <TouchableOpacity
                                 key={t.id}
@@ -75,8 +86,12 @@ export function CardsTurmasMotorista({ turmas, turmaSelecionada, onSelecionarTur
                                 onPress={() => onSelecionarTurma(t)}
                             >
                                 <Ionicons name="bus" size={20} color={selecionada ? colors.white : colors.primary} />
-                                <Text style={[styles.turmaNome, selecionada && styles.turmaNomeSelecionada]}>{t.nome}</Text>
-                                <Text style={[styles.turmaTurno, selecionada && styles.turmaTurnoSelecionada]}>{t.turno}</Text>
+                                <Text style={[styles.turmaNome, selecionada && styles.turmaNomeSelecionada]} numberOfLines={1}>
+                                    {tituloExibicao}
+                                </Text>
+                                <Text style={[styles.turmaTurno, selecionada && styles.turmaTurnoSelecionada]}>
+                                    {t.turno || 'Turno geral'}
+                                </Text>
                             </TouchableOpacity>
                         );
                     })}
