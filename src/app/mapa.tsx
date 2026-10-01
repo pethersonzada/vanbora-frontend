@@ -203,7 +203,7 @@ export default function Mapa() {
 
     async function buscarRotaMapbox(pontos: LatLng[]): Promise<{ routeGeoJSON: any; coordenadas: [number, number][]; manobras: Manobra[] }> {
         if (pontos.length > LIMITE_WAYPOINTS_MAPBOX) {
-            throw new Error(`Limite de ${LIMITE_WAYPOINTS_MAPBOX} pontos excedido (${pontos.length} fornecidos)`);
+            throw new Error(`Limite de ${LIMITE_WAYPOINTS_MAPBOX} pontos excedido`);
         }
         if (!MAPBOX_TOKEN) {
             throw new Error('Token do Mapbox ausente');
@@ -359,7 +359,7 @@ export default function Mapa() {
             setForaDaRota(false);
             setErroRede(null);
         } catch {
-            if (montadoRef.current) setErroRede('Falha ao recalcular a rota automaticamente.');
+            if (montadoRef.current) setErroRede('Falha ao recalcular a rota.');
         } finally {
             recalculandoRef.current = false;
             if (montadoRef.current) setRecalculandoRota(false);
@@ -390,7 +390,7 @@ export default function Mapa() {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (!montadoRef.current) return;
             if (status !== 'granted') {
-                Alert.alert('Permissão negada', 'Ative o acesso à localização para usar o painel de navegação.');
+                Alert.alert('Permissão negada', 'Ative o acesso à localização.');
                 setLoading(false);
                 return;
             }
@@ -429,52 +429,46 @@ export default function Mapa() {
                                 if (tempoForaMs >= LIMIAR_TEMPO_FORA_ROTA_MS) {
                                     setForaDaRota(true);
                                     const agora = Date.now();
-                                    const podeRecalcular = !recalculandoRef.current &&
-                                        (ultimaRecalculacaoRef.current === null || agora - ultimaRecalculacaoRef.current > COOLDOWN_RECALCULO_MS);
-                                    if (podeRecalcular) {
+                                    if (!ultimaRecalculacaoRef.current || agora - ultimaRecalculacaoRef.current > COOLDOWN_RECALCULO_MS) {
                                         ultimaRecalculacaoRef.current = agora;
                                         recalcularRotaAPartirDe(pontoBruto);
                                     }
                                 }
                             }
+                            setHeadingAtual(projecao.bearing);
                         }
                     }
                     
                     animarParaNovaPosicao(posicaoFinal);
                     
-                    let headingAlvo: number | null = null;
-                    if (loc.coords.heading !== null && loc.coords.heading >= 0 && velocidadeKmh > 3) {
-                        headingAlvo = loc.coords.heading;
-                    } else if (projecao && projecao.distancia <= RAIO_DESVIO_ROTA_METROS) {
-                        headingAlvo = projecao.bearing;
-                    }
-                    
-                    if (headingAlvo !== null) {
-                        let diff = headingAlvo - headingRef.current;
-                        diff = ((diff + 180) % 360 + 360) % 360 - 180;
-                        const novoHeading = (headingRef.current + diff * 0.3 + 360) % 360;
-                        headingRef.current = novoHeading;
-                        setHeadingAtual(novoHeading);
-                    }
-                    
-                    const manobrasAtuais = manobrasRef.current;
-                    if (manobrasAtuais.length > 0 && projecao) {
-                        const proxima = manobrasAtuais.find(m => m.indiceRota >= projecao!.indice) || manobrasAtuais[manobrasAtuais.length - 1];
-                        setManobraAtual(proxima);
-                    }
-                    
-                    setRota((prev) => prev.map((p) => {
-                        if (p.embarcado) return p;
-                        const dist = distanciaMetros(pontoBruto, { latitude: p.latitude, longitude: p.longitude });
-                        return dist < RAIO_EMBARQUE_METROS ? { ...p, embarcado: true } : p;
-                    }));
-                    
-                    enviarLocalizacao(pontoBruto)
-                        .then(() => { if (montadoRef.current) setErroRede(null); })
-                        .catch(() => {
+                    if (online) {
+                        enviarLocalizacao(pontoBruto).catch(() => {
                             enfileirarLocalizacao(pontoBruto);
-                            if (montadoRef.current) setErroRede('Sinal instável. Localização em fila para reenvio.');
                         });
+                    } else {
+                        enfileirarLocalizacao(pontoBruto);
+                    }
+                    
+                    const listaPassageiros = rotaRef.current;
+                    listaPassageiros.forEach(async (p) => {
+                        if (!p.embarcado) {
+                            const d = distanciaMetros(posicaoFinal, { latitude: p.latitude, longitude: p.longitude });
+                            if (d <= RAIO_EMBARQUE_METROS) {
+                                p.embarcado = true;
+                                setRota([...listaPassageiros]);
+                                try {
+                                    await fetchComTimeout(`${API_URL}/turmas/embarcar/${p.id}`, { method: 'POST', headers: HEADERS_PADRAO }, 5000);
+                                } catch { }
+                            }
+                        }
+                    });
+
+                    const manobrasList = manobrasRef.current;
+                    if (projecao && manobrasList.length > 0) {
+                        const idxAtual = projecao.indice;
+                        const proxima = manobrasList.find((m) => m.indiceRota >= idxAtual);
+                        if (proxima) setManobraAtual(proxima);
+                    }
                 }
             );
         };
@@ -488,72 +482,62 @@ export default function Mapa() {
             controladoresAtivosRef.current.forEach((c) => c.abort());
             controladoresAtivosRef.current.clear();
         };
-    }, []);
+    }, [sentido]);
 
     async function carregarGaragemERota(direcaoUsada: Sentido) {
-        let garagemCarregada: LatLng | null = null;
-        let rotaCarregada: PassageiroRota[] | null = null;
-        
+        if (!user?.id) return;
         try {
-            await AsyncStorage.removeItem(CACHE_KEYS.rota(direcaoUsada));
-            await AsyncStorage.removeItem(CACHE_KEYS.geometria(direcaoUsada));
-            
-            const resMotorista = await fetchComTimeout(`${API_URL}/usuarios/motorista`, { headers: HEADERS_PADRAO });
-            console.log("STATUS MOTORISTA:", resMotorista.status);
-            
-            if (!resMotorista.ok) throw new Error('Erro ao buscar motorista');
-            const dadosMotorista = await resMotorista.json();
-            console.log("DADOS MOTORISTA RECEBIDOS:", dadosMotorista);
-            
-            const lat = Number(dadosMotorista.latitude);
-            const lng = Number(dadosMotorista.longitude);
+            const resTurmas = await fetchComTimeout(`${API_URL}/turmas/motorista/${user.id}`, { headers: HEADERS_PADRAO }, 6000);
+            let origemTurma: LatLng | null = null;
+            let passageirosCarregados: PassageiroRota[] = [];
 
-            if (!lat || !lng || (lat === 0 && lng === 0)) {
-                throw new Error('Coordenadas da garagem inválidas no servidor');
+            if (resTurmas.ok) {
+                const turmas = await resTurmas.json();
+                if (turmas.length > 0) {
+                    const turmaAtual = turmas[0];
+                    if (turmaAtual.origemLatitude && turmaAtual.origemLongitude) {
+                        origemTurma = {
+                            latitude: Number(turmaAtual.origemLatitude),
+                            longitude: Number(turmaAtual.origemLongitude)
+                        };
+                    }
+                    
+                    const resPassageiros = await fetchComTimeout(`${API_URL}/turmas/${turmaAtual.id}/passageiros`, { headers: HEADERS_PADRAO }, 6000);
+                    if (resPassageiros.ok) {
+                        const lista = await resPassageiros.json();
+                        passageirosCarregados = lista.map((p: any) => ({
+                            id: p.id || p.usuarioId,
+                            nome: p.nome || 'Passageiro',
+                            latitude: Number(p.latitude || p.enderecoLatitude || -8.303),
+                            longitude: Number(p.longitude || p.enderecoLongitude || -35.992),
+                            embarcado: false
+                        }));
+                    }
+                }
             }
 
-            garagemCarregada = { latitude: lat, longitude: lng };
+            const garagemDefinitiva: LatLng = origemTurma || { latitude: -8.2858, longitude: -35.9292 };
+
+            setGaragem(garagemDefinitiva);
+            garagemRef.current = garagemDefinitiva;
+            setRota(passageirosCarregados);
+            rotaRef.current = passageirosCarregados;
+            setDirecaoAtual(direcaoUsada);
+            direcaoAtualRef.current = direcaoUsada;
             
-            const resRota = await fetchComTimeout(`${API_URL}/rota/otimizar?sentido=${direcaoUsada}`, { headers: HEADERS_PADRAO });
-            console.log("STATUS ROTA OTIMIZAR:", resRota.status);
-            
-            if (!resRota.ok) {
-                const erroJson = await resRota.json();
-                console.log("ERRO JSON ROTA:", erroJson);
-                throw new Error(erroJson.erro || 'Erro ao otimizar rota');
-            }
-            rotaCarregada = await resRota.json();
-            console.log("ROTA CARREGADA QUANTIDADE:", rotaCarregada?.length);
-            
-            await salvarCache(CACHE_KEYS.garagem, garagemCarregada);
-            await salvarCache(CACHE_KEYS.rota(direcaoUsada), rotaCarregada);
-        } catch (e) {
-            console.log("ERRO NO CATCH DE CARREGAR GARAGEM:", e);
-            garagemCarregada = await lerCache<LatLng>(CACHE_KEYS.garagem);
-            rotaCarregada = await lerCache<PassageiroRota[]>(CACHE_KEYS.rota(direcaoUsada));
-            if (montadoRef.current) setErroRede('Sem conexão ou endereço inválido. Usando dados salvos.');
+            await carregarGeometriaRota(direcaoUsada, garagemDefinitiva, passageirosCarregados);
+            if (montadoRef.current) setLoading(false);
+        } catch {
+            const garagemFallback: LatLng = { latitude: -8.2858, longitude: -35.9292 };
+            setGaragem(garagemFallback);
+            garagemRef.current = garagemFallback;
+            setRota([]);
+            rotaRef.current = [];
+            setDirecaoAtual(direcaoUsada);
+            direcaoAtualRef.current = direcaoUsada;
+            await carregarGeometriaRota(direcaoUsada, garagemFallback, []);
+            if (montadoRef.current) setLoading(false);
         }
-        
-        if (!montadoRef.current) return;
-        
-        if (!garagemCarregada || (garagemCarregada.latitude === 0 && garagemCarregada.longitude === 0) || !rotaCarregada || rotaCarregada.length === 0) {
-            Alert.alert(
-                'Endereço não cadastrado', 
-                'Precisas de cadastrar o endereço da tua garagem/embarque primeiro na tela de endereços para traçar a rota corretamente.'
-            );
-            setLoading(false);
-            return;
-        }
-        
-        setGaragem(garagemCarregada);
-        garagemRef.current = garagemCarregada;
-        setRota(rotaCarregada);
-        rotaRef.current = rotaCarregada;
-        setDirecaoAtual(direcaoUsada);
-        direcaoAtualRef.current = direcaoUsada;
-        
-        await carregarGeometriaRota(direcaoUsada, garagemCarregada, rotaCarregada);
-        if (montadoRef.current) setLoading(false);
     }
 
     async function carregarGeometriaRota(direcaoUsada: Sentido, garagemPonto: LatLng, passageiros: PassageiroRota[]) {
@@ -588,7 +572,7 @@ export default function Mapa() {
             if (pontosOrdenados.length > LIMITE_WAYPOINTS_MAPBOX) {
                 Alert.alert(
                     'Rota muito extensa',
-                    `Esta rota tem ${pontosOrdenados.length} pontos, acima do limite de ${LIMITE_WAYPOINTS_MAPBOX} da API de direções. Divida a rota ou fale com o suporte técnico.`
+                    `Esta rota tem ${pontosOrdenados.length} pontos, acima do limite.`
                 );
             }
             const geometriaCache = await lerCache<any>(CACHE_KEYS.geometria(direcaoUsada));
@@ -598,15 +582,15 @@ export default function Mapa() {
                 const coords = geometriaCache.geometry?.coordinates || geometriaCache.features?.[0]?.geometry?.coordinates || [];
                 setCoordenadasRota(coords);
                 coordenadasRotaRef.current = coords;
-                setManobraAtual({ instrucao: 'Navegação em modo offline (rota salva)', tipo: 'straight', coordenada: [0, 0], indiceRota: 0 });
+                setManobraAtual({ instrucao: 'Modo offline', tipo: 'straight', coordenada: [0, 0], indiceRota: 0 });
             } else {
-                setErroRede('Não foi possível calcular a rota. Verifique o token do Mapbox e a conexão.');
+                setErroRede('Não foi possível calcular a rota.');
             }
         }
     }
 
     async function handleIniciarViagem() {
-        if (!user?.id || !online) return Alert.alert('Conexão Necessária', 'Conecte-se à internet para iniciar a transmissão da rota.');
+        if (!user?.id || !online) return Alert.alert('Conexão Necessária', 'Conecte-se à internet.');
         try {
             const res = await fetchComTimeout(`${API_URL}/rota/iniciar`, {
                 method: 'POST',
@@ -615,27 +599,27 @@ export default function Mapa() {
             });
             if (res.ok && montadoRef.current) setViagemAtiva(true);
         } catch {
-            if (montadoRef.current) setErroRede('Não foi possível iniciar a viagem. Tente novamente.');
+            if (montadoRef.current) setErroRede('Não foi possível iniciar a viagem.');
         }
     }
 
     async function handleEncerrarViagem() {
-        if (!online) return Alert.alert('Conexão Necessária', 'Conecte-se à internet para sincronizar o encerramento.');
+        if (!online) return Alert.alert('Conexão Necessária', 'Conecte-se à internet.');
         
         Alert.alert(
             'Encerrar Viagem',
-            'Tens a certeza de que desejas encerrar a rota atual?',
+            'Deseja encerrar a rota atual?',
             [
                 { text: 'Cancelar', style: 'cancel' },
                 { 
-                    text: 'Sim, Encerrar', 
+                    text: 'Sim', 
                     style: 'destructive',
                     onPress: async () => {
                         try {
                             const res = await fetchComTimeout(`${API_URL}/rota/encerrar`, { method: 'POST', headers: HEADERS_PADRAO });
                             if (res.ok) router.replace('/(tabs)/home');
                         } catch {
-                            if (montadoRef.current) setErroRede('Não foi possível encerrar a viagem. Tente novamente.');
+                            if (montadoRef.current) setErroRede('Não foi possível encerrar.');
                         }
                     }
                 }
@@ -719,7 +703,7 @@ export default function Mapa() {
                 </View>
             ) : foraDaRota ? (
                 <View style={{ position: 'absolute', top: insets.top + 138, left: 16, right: 16, zIndex: 9, backgroundColor: '#3A1A00', borderColor: '#FF9800', borderWidth: 1, borderRadius: 10, padding: 8 }}>
-                    <Text style={{ color: '#FF9800', fontSize: 11, fontWeight: '700' }}>Fora da rota planejada. Recalculando automaticamente...</Text>
+                    <Text style={{ color: '#FF9800', fontSize: 11, fontWeight: '700' }}>Fora da rota. Recalculando...</Text>
                 </View>
             ) : erroRede ? (
                 <View style={{ position: 'absolute', top: insets.top + 138, left: 16, right: 16, zIndex: 9, backgroundColor: '#3A2E00', borderColor: '#FFC107', borderWidth: 1, borderRadius: 10, padding: 8 }}>
